@@ -10,7 +10,7 @@
 ## * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 
-import random, time
+import random, time, os
 
 
 from .network import network
@@ -33,6 +33,13 @@ class simulator():
     def bootstrap(self):
         self.net = network(self.config, self.topo)
         self.net.bootstrap()
+        if self.topo.rank == 0:
+            if not os.path.exists(self.config.resultsDir):
+                os.makedirs(self.config.resultsDir)
+            if not os.path.exists(self.config.simDir):
+                os.makedirs(self.config.simDir)
+
+
 
     def run(self):
         self.log("Starting simulation", 1)

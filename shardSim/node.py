@@ -10,7 +10,7 @@
 ## * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 
-import random, os
+import random
 from mpi4py import MPI
 
 
@@ -132,9 +132,7 @@ class node():
             self.log("Random number was %d" % r, 3)
 
     def writePeers(self):
-        if not os.path.exists("./results"):
-            os.makedirs("./results")
-        f = open("results/peers-"+str(self.nodeID)+".txt", "w")
+        f = open(self.config.simDir+"/peers-"+str(self.nodeID)+".txt", "w")
         for peer in self.peers:
             f.write(str(peer)+"\n")
         f.close()

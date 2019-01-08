@@ -10,6 +10,9 @@
 ## * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 
+import datetime
+
+
 class configuration():
 
     def __init__(self):
@@ -20,5 +23,9 @@ class configuration():
         self.verbosity = 2
         self.slotDuration = 16
         self.nbPeers = 4
+        self.resultsDir = "results"
+        now = datetime.datetime.now()
+        self.simID = now.strftime("%Y-%m-%d_%H-%M-%S")
+        self.simDir = self.resultsDir+"/"+self.simID
 
 

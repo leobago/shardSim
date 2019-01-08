@@ -48,13 +48,13 @@ class network():
         nodes = []
         edges = []
         nodePeers = []
-        for file in sorted(os.listdir("./results")):
+        for file in sorted(os.listdir(self.config.simDir)):
             if file.endswith(".txt") and file.startswith("peers-"):
                 node = file.split("-")[1].split(".")[0]
                 #print(node)
                 nodes.append(int(node))
                 #g.add_node(int(node), alias=node)
-                f = open("results/"+file)
+                f = open(self.config.simDir+"/"+file)
                 nbPeers = 0
                 for peer in f.readlines():
                     if int(node) == int (peer):
@@ -83,14 +83,14 @@ class network():
         n.set_edgecolor("black")
         nx.draw_networkx_edges(g, pos, edges, alpha=1.0)
         nx.draw_networkx_labels(g, pos, node_labels, font_size=8)
-        plt.savefig("results/net.png")
+        plt.savefig(self.config.simDir+"/net.png")
 
         nbNodes = self.topo.nbRanks * self.config.nodesPerRank
         dataset = []
         dataset.append(range(nbNodes))
         dataset.append(nodePeers)
         plt.clf()
-        target = "results/peers.png"
+        target = self.config.simDir+"/peers.png"
         figConf = getFig("sbar")
         figConf["fileName"]     = target                            # Figure file name
         figConf["xLabel"]       = "Nodes"                           # Label of x axis
