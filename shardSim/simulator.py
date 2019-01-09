@@ -39,8 +39,6 @@ class simulator():
             if not os.path.exists(self.config.simDir):
                 os.makedirs(self.config.simDir)
 
-
-
     def run(self):
         self.log("Starting simulation", 1)
         start = time.time()
@@ -57,14 +55,17 @@ class simulator():
 
         end = time.time()
         self.log("Simulation executed in %f seconds" % (end-start), 1)
+        self.topo.comm.barrier()
 
     def postProcess(self):
         self.log("Simulator postprocessing results", 1)
         self.net.logNet()
+        self.topo.comm.barrier()
 
     def plot(self):
         self.log("Simulator plotting results", 1)
         if self.topo.rank == 0:
             self.net.plotP2P()
+            self.net.nodes[random.randint(0, self.config.nodesPerRank)].plotBlockTimes()
 
 

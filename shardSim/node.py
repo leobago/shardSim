@@ -12,8 +12,9 @@
 
 import random
 from mpi4py import MPI
+import matplotlib.pyplot as plt
 
-
+from .plot import getFig, plotData
 from .block import block
 
 
@@ -28,8 +29,9 @@ class node():
         self.time = 0
         self.peers = []
         self.reqList = []
+        self.uncles = []
         self.blockChain = []
-        b = block(None, 0)
+        b = block(None, 0, 0)
         self.blockChain.append(b)
 
     def log(self, msg, verbosity):
@@ -47,7 +49,7 @@ class node():
                 target = random.randint(0, self.topo.nbRanks-1) * self.config.maxNodesPerRank
                 target = target + random.randint(0, self.config.nodesPerRank-1)
             self.send(target, message)
-            self.peers.append(target) # This assumes the petition will be received and accepted
+            self.peers.append(target) # This assumes the petition will be received AND accepted
         self.id = 0
 
     def tick(self):
@@ -75,6 +77,24 @@ class node():
             self.log("Message %s received from %d" % (str(message), source), 3)
             self.classifyMessage(message)
 
+    def checkChain(self):
+        last = len(self.blockChain) - 1
+        while last > 0:
+            if (self.blockChain[last].parent != self.blockChain[last-1].hash):
+                self.log("Chain needs to be reorganized", 2)
+                found = False
+                for index, uncle in enumerate(self.uncles):
+                    if uncle.hash == self.blockChain[last].parent:
+                        tempBlock = self.blockChain[last-1] #Swap them
+                        self.blockChain[last-1] = uncle
+                        self.uncles[index] = tempBlock
+                        found = True
+                if found:
+                    self.log("Blockchain reorganized with block %s" % (self.blockChain[last-1].hash[-4:]), 2)
+                else:
+                    self.log("WARNING : Blockchain could not be reorganized for block number %d" % self.blockChain[last].number, 1)
+            last = last -1
+
     def classifyMessage(self, message):
         if message["header"] == "New peer":
             source = message["source"]
@@ -91,35 +111,28 @@ class node():
             newBlock = message["block"]
             if next((b for b in self.blockChain if b.hash == newBlock.hash), None) != None:
                 self.log("Block %s already in the chain" % newBlock.hash[-4:], 3)
-            else:
-                if newBlock.number ==  (self.blockChain[-1].number + 1):
-                    self.blockChain.append(newBlock)
-                    self.log("New block %s number %d received" % (newBlock.hash, newBlock.number), 3)
+            else: # If new block not in the blockchain
+                if newBlock.number ==  (self.blockChain[-1].number + 1): # If it is the next block
+                    self.blockChain.append(newBlock) # Add it to the main chain
+                    self.log("New block %s number %d received" % (newBlock.hash[-4:], newBlock.number), 3)
                     message["source"] = self.nodeID
                     self.broadcast(message)
-                elif newBlock.number == self.blockChain[-1].number:
-                    if newBlock.miner < self.blockChain[-1].miner: # Consensus by ID
-                        self.blockChain[-1] = newBlock
-                        self.log("New block %s number %d overwriting previous uncle" % (newBlock.hash[-4:], newBlock.number), 3)
-                        self.broadcast(message)
-                    else:
-                        self.log("Uncle block %s number %d received" % (newBlock.hash[-4:], newBlock.number), 3)
-                elif newBlock.number < self.blockChain[-1].number:
-                    if newBlock.miner < self.blockChain[(newBlock.number - 7000000)].miner: # Consensus by ID
-                        self.blockChain[-1] = newBlock
-                        self.log("New block %s number %d overwriting previous uncle" % (newBlock.hash[-4:], newBlock.number), 3)
-                        self.broadcast(message)
-                    else:
-                        self.log("WARNING : Slow messages", 3)
-                elif newBlock.number > self.blockChain[-1].number:
-                    self.log("WARNING : Node seems out of sync", 3)
+                    self.checkChain()
                 else:
-                    self.log("WARNING : We should never reach this point", 1)
+                    if newBlock.number <= self.blockChain[-1].number: # If it is the same height
+                        if next((b for b in self.uncles if b.hash == newBlock.hash), None) == None: # and not in uncles
+                            self.uncles.append(newBlock)
+                            self.log("Uncle block %s number %d received at time %d" % (newBlock.hash[-4:], newBlock.number, self.time), 2)
+                            self.broadcast(message)
+                        else:
+                            self.log("Block %s already in the uncles list" % newBlock.hash[-4:], 3)
+                    else:
+                        self.log("WARNING : Node seems out of sync", 3)
 
     def mine(self):
         r = random.randint(0, (self.topo.nbRanks * self.config.nodesPerRank * self.config.slotDuration) - 1)
         if (r == 0):
-            b = block(self.blockChain[-1], self.nodeID)
+            b = block(self.blockChain[-1], self.nodeID, self.time)
             self.blockChain.append(b)
             self.log("I have mine block %s number %d at time %d" % (b.hash[-4:], b.number, self.time), 1)
             message = {}
@@ -129,7 +142,7 @@ class node():
             self.broadcast(message)
 
         else:
-            self.log("Random number was %d" % r, 3)
+            self.log("Random number was %d" % r, 4)
 
     def writePeers(self):
         f = open(self.config.simDir+"/peers-"+str(self.nodeID)+".txt", "w")
@@ -137,4 +150,33 @@ class node():
             f.write(str(peer)+"\n")
         f.close()
 
+    def plotBlockTimes(self):
+        bt = []
+        blockTimes = []
+        lastBlockTime = self.blockChain[0].time
+        for block in self.blockChain[1:]:
+            if block.time >= lastBlockTime:
+                blockTimes.append(block.time - lastBlockTime)
+            else:
+                blockTimes.append(0)
+            lastBlockTime = block.time
+        print(blockTimes)
+        dataset = []
+        dataset.append(range(len(blockTimes)))
+        dataset.append(blockTimes)
+        plt.clf()
+        target = self.config.simDir+"/blockTimes.png"
+        figConf = getFig("sbar")
+        figConf["fileName"]     = target                            # Figure file name
+        figConf["xLabel"]       = "Block number"                    # Label of x axis
+        figConf["yLabel"]       = "Time to Block (s)"               # Label of y axis
+        figConf["axis"]         = [0, len(blockTimes), 0, (max(blockTimes))+1]       # Axis limits
+        figConf["yGrid"]        = True                              # Enable x axis grid lines
+        figConf["colors"]       = ["b", "b", "c", "g", "y", "r" ]   # Colors
+        figConf["labels"]       = ["BlockTime", "4", "5", "6"]      # Labels
+        figConf["legCol"]       = 1                                 # Columns in the legend
+        figConf["nbDatasets"]   = 1                                 # Number of datasets
+        figConf["datasets"]     = dataset                           # Datasets
+        plotData(figConf)
+        print("Average block time : %d seconds" % (sum(blockTimes) / len(blockTimes)))
 

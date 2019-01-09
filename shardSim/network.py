@@ -10,7 +10,7 @@
 ## * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 
-import time, os, itertools
+import os, itertools
 import matplotlib.pyplot as plt
 import networkx as nx
 
@@ -38,13 +38,13 @@ class network():
     def tick(self):
         for node in self.nodes:
             node.tick()
+            #self.topo.comm.barrier()
 
     def logNet(self):
         for node in self.nodes:
             node.writePeers()
 
     def plotP2P(self):
-        time.sleep(1) # Wait other processes finish writing
         nodes = []
         edges = []
         nodePeers = []

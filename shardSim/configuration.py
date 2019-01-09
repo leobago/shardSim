@@ -20,7 +20,7 @@ class configuration():
         self.maxNodesPerRank = 100
         self.simTime = 1000
         self.timeSpeed = 100
-        self.verbosity = 2
+        self.verbosity = 1
         self.slotDuration = 16
         self.nbPeers = 4
         self.resultsDir = "results"
