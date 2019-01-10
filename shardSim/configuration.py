@@ -23,6 +23,7 @@ class configuration():
         self.verbosity = 1
         self.slotDuration = 16
         self.nbPeers = 4
+        self.maxOutQueue = 50
         self.resultsDir = "results"
         now = datetime.datetime.now()
         self.simID = now.strftime("%Y-%m-%d_%H-%M-%S")

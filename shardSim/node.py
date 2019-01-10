@@ -28,7 +28,7 @@ class node():
         self.miner = True
         self.time = 0
         self.peers = []
-        self.reqList = []
+        self.outQueue = []
         self.uncles = []
         self.blockChain = []
         b = block(None, 0, 0)
@@ -56,12 +56,19 @@ class node():
         self.listen()
         if self.miner:
             self.mine()
+        self.cleanOutQueue()
         self.time += 1
+
+    def cleanOutQueue(self):
+        if len(self.outQueue) > self.config.maxOutQueue:
+            sReq = self.outQueue.pop(0)
+            sReq.wait()
 
     def send(self, target, message):
         targetRank = int(target/100)
         self.log("Message sent to node %d in rank %d" % (target, targetRank), 3)
-        req = self.topo.comm.isend(message, dest=targetRank, tag=target)
+        sReq = self.topo.comm.isend(message, dest=targetRank, tag=target)
+        self.outQueue.append(sReq)
 
     def broadcast(self, message):
         for peer in self.peers:
@@ -69,11 +76,10 @@ class node():
 
     def listen(self):
         status = MPI.Status()
-        req = self.topo.comm.iprobe(source=MPI.ANY_SOURCE, tag=self.nodeID, status=status)
-        source = status.Get_source()
-        if source >= 0:
-            rreq = self.topo.comm.irecv(source=source, tag=self.nodeID)
-            message = rreq.wait()
+        flag = self.topo.comm.iprobe(source=MPI.ANY_SOURCE, tag=self.nodeID, status=status)
+        if flag:
+            source = status.Get_source()
+            message = self.topo.comm.recv(source=source, tag=self.nodeID)
             self.log("Message %s received from %d" % (str(message), source), 3)
             self.classifyMessage(message)
 
@@ -160,7 +166,6 @@ class node():
             else:
                 blockTimes.append(0)
             lastBlockTime = block.time
-        print(blockTimes)
         dataset = []
         dataset.append(range(len(blockTimes)))
         dataset.append(blockTimes)
