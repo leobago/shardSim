@@ -184,5 +184,4 @@ class node():
         figConf["nbDatasets"]   = 1                                 # Number of datasets
         figConf["datasets"]     = dataset                           # Datasets
         plotData(figConf)
-        print("Average block time : %d seconds" % (sum(blockTimes) / len(blockTimes)))
 

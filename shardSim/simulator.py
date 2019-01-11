@@ -27,9 +27,9 @@ class simulator():
         topo = topology()
         self.config = config
         self.topo = topo
-        self.log("Simulator initialized", 1)
         self.timeResolution = 1.0/self.config.timeSpeed
         random.seed(topo.rank*time.time())
+        self.log("Simulator initialized", 1)
 
     def log(self, msg, verbosity):
         if verbosity <= self.config.verbosity:
@@ -46,7 +46,6 @@ class simulator():
                 os.makedirs(self.config.simDir)
 
     def run(self):
-        self.log("Starting simulation", 1)
         start = time.time()
         for i in range(self.config.simTime):
             beforeTick = time.time()
@@ -64,7 +63,6 @@ class simulator():
         self.topo.comm.barrier()
 
     def postProcess(self):
-        self.log("Simulator plotting results", 1)
         peerList = []
         for node in self.net.nodes:
             peerList.append([node.nodeID, node.peers])
@@ -80,5 +78,5 @@ class simulator():
             f.write(htmlContent)
             f.close()
             self.log("Complete report generated in "+fileName, 1)
-            call(["google-chrome", fileName])
+            call([self.config.browser, fileName])
 

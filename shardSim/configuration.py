@@ -24,8 +24,9 @@ class configuration():
         self.verbosity = 1
         self.slotDuration = 16
         self.nbPeers = 4
-        self.maxOutQueue = 100
+        self.maxOutQueue = 50
         self.resultsDir = "data"
+        self.browser = "google-chrome"
         now = datetime.datetime.now()
         simID = now.strftime("%Y-%m-%d_%H-%M-%S")
         SID = [simID] * MPI.COMM_WORLD.Get_size()
