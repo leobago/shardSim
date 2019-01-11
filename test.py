@@ -18,7 +18,6 @@ def mySimulation():
     sim.bootstrap()
     sim.run()
     sim.postProcess()
-    sim.plot()
 
 
 mySimulation()

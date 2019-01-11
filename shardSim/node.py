@@ -13,6 +13,8 @@
 import random
 from mpi4py import MPI
 
+
+from .report import nodeReport
 from .plot import getFig, plotData
 from .block import block
 
@@ -149,10 +151,11 @@ class node():
         else:
             self.log("Random number was %d" % r, 4)
 
-    def writePeers(self):
-        f = open(self.config.simDir+"/peers-"+str(self.nodeID)+".txt", "w")
-        for peer in self.peers:
-            f.write(str(peer)+"\n")
+    def report(self):
+        htmlContent = nodeReport(self.config.simID, self.nodeID, self.peers, self.blockChain, self.uncles)
+        fileName = self.config.simDir+"/"+str(self.nodeID)+".html"
+        f =  open(fileName, "w")
+        f.write(htmlContent)
         f.close()
 
     def plotBlockTimes(self):

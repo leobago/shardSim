@@ -1,0 +1,73 @@
+html, body {
+    height: 100%;
+}
+
+html {
+    display: table;
+    margin: auto;
+}
+
+body {
+    background-color: LightYellow;
+    vertical-align: middle;
+    display: table-cell;
+}
+
+a:link {
+  color: OrangeRed;
+  text-decoration: none;
+}
+
+a:visited {
+  color: OrangeRed;
+  text-decoration: none;
+}
+
+a:hover {
+  color: OrangeRed;
+  text-decoration: underline;
+}
+
+a:active {
+  color: OrangeRed;
+  text-decoration: underline;
+}
+
+table {
+    background-color: White;
+    border: 1px dashed Orange;
+    border-spacing: 0;
+    border-collapse: collapse;
+    padding: 0px;
+}
+
+tr {
+    padding: 0px;
+}
+
+td {
+    border: 1px dashed Orange;
+    padding: 10px;
+}
+
+table.chain {
+    text-align: center;
+    background-color: LemonChiffon;
+}
+
+td.chain {
+    font-size: small;
+}
+
+td.header {
+    font-weight: bold;
+}
+
+h1 {
+    color: OrangeRed;
+}
+
+h2 {
+    color: Orange;
+}
+

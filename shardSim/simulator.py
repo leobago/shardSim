@@ -12,12 +12,13 @@
 
 import random, time, sys, os
 from mpi4py import MPI
+from subprocess import call
 
 
 from .network import network
 from .configuration import configuration
 from .topology import topology
-
+from .report import mainReport
 
 class simulator():
 
@@ -63,19 +64,21 @@ class simulator():
         self.topo.comm.barrier()
 
     def postProcess(self):
-        self.log("Simulator postprocessing results", 1)
-        #self.net.logNet()
-        self.topo.comm.barrier()
-
-    def plot(self):
         self.log("Simulator plotting results", 1)
         peerList = []
         for node in self.net.nodes:
             peerList.append([node.nodeID, node.peers])
+            node.report()
         globalPeers = self.topo.comm.gather(peerList, root=0)
         if self.topo.rank == 0:
             self.net.plotP2P(globalPeers)
             observer = random.randint(0, self.config.nodesPerRank)
             self.net.nodes[observer].plotBlockTimes()
-
+            htmlContent = mainReport(self.net, globalPeers)
+            fileName = self.config.simDir+"/index.html"
+            f =  open(fileName, "w")
+            f.write(htmlContent)
+            f.close()
+            self.log("Complete report generated in "+fileName, 1)
+            call(["google-chrome", fileName])
 
