@@ -10,12 +10,10 @@
 ## * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 
-import os, itertools
-import matplotlib.pyplot as plt
-import networkx as nx
+import os
 
 
-from .plot import getFig, plotData
+from .plot import getFig, plotData, plotNetwork
 from .node import node
 
 
@@ -38,70 +36,44 @@ class network():
     def tick(self):
         for node in self.nodes:
             node.tick()
-            #self.topo.comm.barrier()
 
     def logNet(self):
         for node in self.nodes:
             node.writePeers()
 
-    def plotP2P(self):
+    def plotP2P(self, globalPeers):
         nodes = []
         edges = []
         nodePeers = []
-        for file in sorted(os.listdir(self.config.simDir)):
-            if file.endswith(".txt") and file.startswith("peers-"):
-                node = file.split("-")[1].split(".")[0]
-                #print(node)
-                nodes.append(int(node))
-                #g.add_node(int(node), alias=node)
-                f = open(self.config.simDir+"/"+file)
+        for rank in globalPeers:
+            for node in rank:
+                nodeID = int(node[0])
+                nodes.append(nodeID)
+                peers = node[1]
                 nbPeers = 0
-                for peer in f.readlines():
-                    if int(node) == int (peer):
-                        log("WARNING : Self Loop Edge %d - %d" % (int(node), int(peer)), 1)
+                for peer in peers:
+                    if nodeID == peer:
+                        log("WARNING : Self Loop Edge %d - %d" % (nodeID, peer), 1)
                     else:
-                        edges.append(sorted([int(node), int(peer)]))
+                        edges.append(sorted([nodeID, peer]))
                         nbPeers += 1
                 nodePeers.append(nbPeers)
-        minPeers = min(nodePeers)
-        maxPeers = max(nodePeers)
-
-        g = nx.Graph()
-        for node in nodes:
-            g.add_node(node, alias=str(node))
-        edges.sort()
-        edges = list(edges for edges,_ in itertools.groupby(edges)) # Remove repeated edges
-        for edge in edges:
-                g.add_edge(edge[0], edge[1])
-        pos = nx.spring_layout(g)
-        plt.figure(figsize=(25,25))
-        plt.axis('off')
-        node_labels = nx.get_node_attributes(g, 'alias')
-        nodes = g.nodes
-        edges = g.edges
-        n = nx.draw_networkx_nodes(g, pos, nodes, node_size=250, node_color=nodePeers, cmap="winter", vmin=minPeers, vmax=maxPeers, alpha=0.9)
-        n.set_edgecolor("black")
-        nx.draw_networkx_edges(g, pos, edges, alpha=1.0)
-        nx.draw_networkx_labels(g, pos, node_labels, font_size=8)
-        plt.savefig(self.config.simDir+"/net.png")
-
         nbNodes = self.topo.nbRanks * self.config.nodesPerRank
         dataset = []
         dataset.append(range(nbNodes))
         dataset.append(nodePeers)
-        plt.clf()
         target = self.config.simDir+"/peers.png"
         figConf = getFig("sbar")
         figConf["fileName"]     = target                            # Figure file name
         figConf["xLabel"]       = "Nodes"                           # Label of x axis
         figConf["yLabel"]       = "Number of Peers"                 # Label of y axis
-        figConf["axis"]         = [0, nbNodes, 0, maxPeers+1]       # Axis limits
+        figConf["axis"]         = [0, nbNodes, 0, max(nodePeers)+1] # Axis limits
         figConf["yGrid"]        = True                              # Enable x axis grid lines
-        figConf["colors"]       = ["b", "b", "c", "g", "y", "r" ]   # Colors
-        figConf["labels"]       = ["", "2", "3", "4", "5", "6+"]    # Labels
+        figConf["colors"]       = ["g", "b", "c", "g", "y", "r" ]   # Colors
+        figConf["labels"]       = ["Number of Peers", "2", "3"]     # Labels
         figConf["legCol"]       = 1                                 # Columns in the legend
         figConf["nbDatasets"]   = 1                                 # Number of datasets
         figConf["datasets"]     = dataset                           # Datasets
         plotData(figConf)
-
+        plotNetwork(nodes, edges, nodePeers, self.config.simDir+"/net.png")
 

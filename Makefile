@@ -1,26 +1,18 @@
 DOC		= doc
-RSL		= results
+DAT		= data
 
+all: 		test
 
-all: 		test3
-
-
-test2:
-		mpirun -np 4 python ./test.py
-
-test3:
+test:
 		mpirun -np 4 python3.6 ./test.py
-
 
 doc:
 		@mkdir -p $(DOC)
 		doxygen $(DOC)/Doxyfile.in
 
-
 clean:
-		$(RM) -rf $(DOC)/*/* $(RSL)/*
+		$(RM) -rf $(DOC)/*/* $(DAT)/*
 
-
-.PHONY:		test2 test3 doc clean
+.PHONY:		test doc clean
 
 

@@ -12,7 +12,6 @@
 
 import random
 from mpi4py import MPI
-import matplotlib.pyplot as plt
 
 from .plot import getFig, plotData
 from .block import block
@@ -140,7 +139,7 @@ class node():
         if (r == 0):
             b = block(self.blockChain[-1], self.nodeID, self.time)
             self.blockChain.append(b)
-            self.log("I have mine block %s number %d at time %d" % (b.hash[-4:], b.number, self.time), 1)
+            self.log("I have mined block %s number %d at time %d" % (b.hash[-4:], b.number, self.time), 1)
             message = {}
             message["header"] = "New block"
             message["source"] = self.nodeID
@@ -169,7 +168,6 @@ class node():
         dataset = []
         dataset.append(range(len(blockTimes)))
         dataset.append(blockTimes)
-        plt.clf()
         target = self.config.simDir+"/blockTimes.png"
         figConf = getFig("sbar")
         figConf["fileName"]     = target                            # Figure file name

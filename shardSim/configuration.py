@@ -10,7 +10,8 @@
 ## * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 
-import datetime
+import datetime, time
+from mpi4py import MPI
 
 
 class configuration():
@@ -23,10 +24,12 @@ class configuration():
         self.verbosity = 1
         self.slotDuration = 16
         self.nbPeers = 4
-        self.maxOutQueue = 50
-        self.resultsDir = "results"
+        self.maxOutQueue = 100
+        self.resultsDir = "data"
         now = datetime.datetime.now()
-        self.simID = now.strftime("%Y-%m-%d_%H-%M-%S")
+        simID = now.strftime("%Y-%m-%d_%H-%M-%S")
+        SID = [simID] * MPI.COMM_WORLD.Get_size()
+        simID = MPI.COMM_WORLD.scatter(SID, root=0)
+        self.simID = simID
         self.simDir = self.resultsDir+"/"+self.simID
-
 

@@ -10,13 +10,11 @@
 ## * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 
-from shardSim import configuration, topology, simulator
+from shardSim import simulator
 
 
 def mySimulation():
-    config = configuration()
-    topo = topology()
-    sim = simulator(config, topo)
+    sim = simulator()
     sim.bootstrap()
     sim.run()
     sim.postProcess()

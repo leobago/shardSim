@@ -10,15 +10,20 @@
 ## * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 
-import random, time, os
+import random, time, sys, os
+from mpi4py import MPI
 
 
 from .network import network
+from .configuration import configuration
+from .topology import topology
 
 
 class simulator():
 
-    def __init__(self, config, topo):
+    def __init__(self):
+        config = configuration()
+        topo = topology()
         self.config = config
         self.topo = topo
         self.log("Simulator initialized", 1)
@@ -59,13 +64,18 @@ class simulator():
 
     def postProcess(self):
         self.log("Simulator postprocessing results", 1)
-        self.net.logNet()
+        #self.net.logNet()
         self.topo.comm.barrier()
 
     def plot(self):
         self.log("Simulator plotting results", 1)
+        peerList = []
+        for node in self.net.nodes:
+            peerList.append([node.nodeID, node.peers])
+        globalPeers = self.topo.comm.gather(peerList, root=0)
         if self.topo.rank == 0:
-            self.net.plotP2P()
-            self.net.nodes[random.randint(0, self.config.nodesPerRank)].plotBlockTimes()
+            self.net.plotP2P(globalPeers)
+            observer = random.randint(0, self.config.nodesPerRank)
+            self.net.nodes[observer].plotBlockTimes()
 
 

@@ -12,7 +12,9 @@
 
 from matplotlib.colors import LogNorm
 import matplotlib.pyplot as plt
+import itertools, warnings
 from operator import add
+import networkx as nx
 import numpy as np
 
 
@@ -149,3 +151,30 @@ def plotData(figConf):
         plt.colorbar(orientation=figConf["orientation"])
     plt.savefig(figConf["fileName"], bbox_inches='tight')
     print("Figure "+figConf["fileName"]+" generated.")
+
+def plotNetwork(nodes, edges, nodePeers, fileName):
+    g = nx.Graph()
+    plt.figure(figsize=(25,25))
+    plt.axis('off')
+    for node in nodes:
+        g.add_node(node, alias=str(node))
+    edges.sort()
+    edges = list(edges for edges,_ in itertools.groupby(edges)) # Remove repeated edges
+    for edge in edges:
+            g.add_edge(edge[0], edge[1])
+    pos = nx.spring_layout(g)
+    node_labels = nx.get_node_attributes(g, 'alias')
+    nodes = g.nodes
+    edges = g.edges
+    minPeers = min(nodePeers)
+    maxPeers = max(nodePeers)
+    n = nx.draw_networkx_nodes(g, pos, nodes, node_size=250, node_color=nodePeers, cmap="winter", vmin=minPeers, vmax=maxPeers, alpha=0.9)
+    n.set_edgecolor("black")
+    warnings.filterwarnings("ignore") # To avoid annoying deprecated message from networkx
+    nx.draw_networkx_edges(g, pos, edges, alpha=1.0)
+    warnings.resetwarnings()
+    nx.draw_networkx_labels(g, pos, node_labels, font_size=8)
+    plt.savefig(fileName)
+    print("Figure "+fileName+" generated.")
+
+
