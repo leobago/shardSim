@@ -8,7 +8,8 @@ How to run on Ubuntu
 
 First make sure you have the header file for Python.
 
-$ sudo apt install python3-dev
+.. code-block:: shell
+        $ sudo apt install python3-dev
 
 Then, install MPI (openmpi in this case).
 
