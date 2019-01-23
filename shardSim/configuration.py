@@ -18,17 +18,24 @@ class configuration():
 
     def __init__(self):
         # Topology settings
-        self.nodesPerRank = 16
+        self.nodesPerRank = 46
         self.maxNodesPerRank = 100
 
         # Time settings
         self.simTime = 1000
-        self.timeSpeed = 100
+        self.timeSpeed = 10
 
         # Main chain settings
         self.slotDuration = 16
         self.nbPeers = 4
         self.minerRatio = 90
+
+        # Beacon chain settings
+        self.validatorRatio = 50
+
+        # Shards settings
+        self.nbShards = 4
+        self.committeeSize = 8
 
         # MPI settings
         self.maxOutQueue = 50

@@ -39,7 +39,6 @@ class node():
             self.miner = True
         else:
             self.miner = False
-        self.log(str(self.miner), 1)
 
     def log(self, msg, verbosity):
         if verbosity <= self.config.verbosity:
@@ -186,6 +185,7 @@ class node():
         figConf["yGrid"]        = True                              # Enable x axis grid lines
         figConf["colors"]       = ["b", "b", "c", "g", "y", "r" ]   # Colors
         figConf["labels"]       = ["BlockTime", "4", "5", "6"]      # Labels
+        figConf["hline"]        = sum(blockTimes)/len(blockTimes)   # Horizontal line for average
         figConf["legCol"]       = 1                                 # Columns in the legend
         figConf["nbDatasets"]   = 1                                 # Number of datasets
         figConf["datasets"]     = dataset                           # Datasets
