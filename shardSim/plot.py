@@ -41,6 +41,7 @@ def getFig(type):
     figConf["yTsize"]       = 9                                 # Size of y axis ticks
     figConf["lineWidth"]    = 1                                 # Border line width
     figConf["fit"]          = []                                # Fit to the histogram
+    figConf["hline"]        = []                                # Horizontal line
     figConf["xGrid"]        = False                             # Enable x axis grid lines
     figConf["yGrid"]        = False                             # Enable y axis grid lines
     figConf["labels"]       = []                                # List of labels
@@ -128,6 +129,9 @@ def plotData(figConf):
         plt.axis(figConf["axis"])
         if figConf["fit"] != []:
             plt.plot(figConf["fit"][0], figConf["fit"][1], "g--", label="")
+        if figConf["hline"] != []:
+            #ax = fig.add_subplot(111)
+            plt.hlines(figConf["hline"], figConf["datasets"][0][0], figConf["datasets"][0][len(figConf["datasets"][0])-1]+1, colors="red")
         #jump = (figConf["axis"][1]-figConf["axis"][0])/8
         #plt.xticks(np.arange(figConf["axis"][0]-1, figConf["axis"][1], jump))
         #plt.locator_params(axis='x', nbins=4)

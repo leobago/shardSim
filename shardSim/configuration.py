@@ -17,14 +17,24 @@ from mpi4py import MPI
 class configuration():
 
     def __init__(self):
+        # Topology settings
         self.nodesPerRank = 16
         self.maxNodesPerRank = 100
+
+        # Time settings
         self.simTime = 1000
         self.timeSpeed = 100
-        self.verbosity = 1
+
+        # Main chain settings
         self.slotDuration = 16
         self.nbPeers = 4
+        self.minerRatio = 90
+
+        # MPI settings
         self.maxOutQueue = 50
+
+        # Post-processing setting
+        self.verbosity = 1
         self.resultsDir = "data"
         self.browser = "google-chrome"
         now = datetime.datetime.now()
@@ -34,3 +44,6 @@ class configuration():
         self.simID = simID
         self.simDir = self.resultsDir+"/"+self.simID
 
+    def verify(self):
+        if self.nodesPerRank > self.maxNodesPerRank:
+            print("WARNING : nodes per rank higher than max nodes per rank")

@@ -11,14 +11,16 @@
 
 
 from shardSim import simulator
+from subprocess import call
 
 
 def mySimulation():
     sim = simulator()
     sim.bootstrap()
     sim.run()
-    sim.postProcess()
-
+    report = sim.postProcess()
+    if report:
+        call(["google-chrome", report])
 
 mySimulation()
 

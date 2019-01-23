@@ -26,7 +26,7 @@ class node():
         self.topo = topo
         self.net = net
         self.nodeID = nodeID
-        self.miner = True
+        self.address = '0x%040x' % random.getrandbits(40 * 4)
         self.time = 0
         self.peers = []
         self.outQueue = []
@@ -34,6 +34,12 @@ class node():
         self.blockChain = []
         b = block(None, 0, 0)
         self.blockChain.append(b)
+        self.ether = random.randint(0, 100)
+        if random.randint(0, 100) < self.config.minerRatio:
+            self.miner = True
+        else:
+            self.miner = False
+        self.log(str(self.miner), 1)
 
     def log(self, msg, verbosity):
         if verbosity <= self.config.verbosity:
@@ -137,7 +143,7 @@ class node():
                         self.log("WARNING : Node seems out of sync", 3)
 
     def mine(self):
-        r = random.randint(0, (self.topo.nbRanks * self.config.nodesPerRank * self.config.slotDuration) - 1)
+        r = random.randint(0, int((self.topo.nbRanks * self.config.nodesPerRank * (self.config.minerRatio/100.0) * self.config.slotDuration) - 1))
         if (r == 0):
             b = block(self.blockChain[-1], self.nodeID, self.time)
             self.blockChain.append(b)
@@ -152,7 +158,7 @@ class node():
             self.log("Random number was %d" % r, 4)
 
     def report(self):
-        htmlContent = nodeReport(self.config.simID, self.nodeID, self.peers, self.blockChain, self.uncles)
+        htmlContent = nodeReport(self)
         fileName = self.config.simDir+"/"+str(self.nodeID)+".html"
         f =  open(fileName, "w")
         f.write(htmlContent)

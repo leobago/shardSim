@@ -33,9 +33,9 @@ def mainReport(net, globalPeers):
                         with tag('h2'):
                             text("P2P Network")
                         nbNodes = net.topo.nbRanks * net.config.nodesPerRank
-                        line("p", "The simulation ran with a total of "+str(nbNodes)+" nodes.")
-                        line("p", "More specifically it used "+str(net.topo.nbRanks)+" MPI ranks.")
-                        line("p", "Each rank simulated "+str(net.config.nodesPerRank)+" P2P nodes per MPI rank.")
+                        line("p", "The simulation ran with a total of "+str(net.topo.nbRanks)+" MPIR ranks.")
+                        line("p", "Each rank simulated "+str(net.config.nodesPerRank)+" simNodes.")
+                        line("p", "In total, the execution simulated "+str(nbNodes)+" simNodes.")
                         line("p", "Visualization of the P2P network:")
                         with tag("a", href="net.png"):
                             doc.stag('img', src="net.png", width="900")
@@ -61,7 +61,7 @@ def mainReport(net, globalPeers):
 
     return indent(doc.getvalue())
 
-def nodeReport(SID, nodeID, peers, blockChain, uncles):
+def nodeReport(node):
     doc, tag, text, line = Doc().ttl()
     with tag('html'):
         with tag('head'):
@@ -72,12 +72,16 @@ def nodeReport(SID, nodeID, peers, blockChain, uncles):
                     with tag('td', align="center"):
                         with tag('h1'):
                             with tag('a', href="index.html"):
-                                text("Sharding Simulation "+SID+" - Node "+str(nodeID))
+                                text("Sharding Simulation "+node.config.simID+" - Node "+str(node.nodeID))
                 with tag('tr'):
                     with tag('td', align="center"):
+                        with tag('h3'):
+                            line("p", "Address : "+node.address)
+                            line("p", "Ether : "+str(node.ether))
+                            line("p", "Miner : "+str(node.miner))
                         with tag('h2'):
                             text("Main chain")
-                        if blockChain:
+                        if node.blockChain:
                             with tag('table', width="900", klass="chain"):
                                 with tag('tr'):
                                     line("td", "Number", klass="header")
@@ -85,7 +89,7 @@ def nodeReport(SID, nodeID, peers, blockChain, uncles):
                                     line("td", "Parent", klass="header")
                                     line("td", "Miner", klass="header")
                                     line("td", "Time", klass="header")
-                                for block in blockChain[::-1]:
+                                for block in node.blockChain[::-1]:
                                     with tag('tr'):
                                         line("td", str(block.number), klass="chain")
                                         line("td", str(block.hash[-16:]), klass="chain")
@@ -98,7 +102,7 @@ def nodeReport(SID, nodeID, peers, blockChain, uncles):
                     with tag('td', align="center"):
                         with tag('h2'):
                             text("Uncle blocks")
-                        if blockChain:
+                        if node.uncles:
                             with tag('table', width="900", klass="chain"):
                                 with tag('tr'):
                                     line("td", "Number", klass="header")
@@ -106,7 +110,7 @@ def nodeReport(SID, nodeID, peers, blockChain, uncles):
                                     line("td", "Parent", klass="header")
                                     line("td", "Miner", klass="header")
                                     line("td", "Time", klass="header")
-                                for block in uncles[::-1]:
+                                for block in node.uncles[::-1]:
                                     with tag('tr'):
                                         line("td", str(block.number), klass="chain")
                                         line("td", str(block.hash[-16:]), klass="chain")
@@ -119,7 +123,7 @@ def nodeReport(SID, nodeID, peers, blockChain, uncles):
                     with tag('td', align="center"):
                         with tag('h2'):
                             text("Peers")
-                        for peer in peers:
+                        for peer in node.peers:
                             with tag("a", href=str(peer)+".html"):
                                     text(str(peer))
                         doc.stag('br')

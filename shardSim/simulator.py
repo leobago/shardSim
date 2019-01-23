@@ -12,7 +12,6 @@
 
 import random, time, sys, os
 from mpi4py import MPI
-from subprocess import call
 
 
 from .network import network
@@ -70,7 +69,7 @@ class simulator():
         globalPeers = self.topo.comm.gather(peerList, root=0)
         if self.topo.rank == 0:
             self.net.plotP2P(globalPeers)
-            observer = random.randint(0, self.config.nodesPerRank)
+            observer = random.randint(0, self.config.nodesPerRank-1)
             self.net.nodes[observer].plotBlockTimes()
             htmlContent = mainReport(self.net, globalPeers)
             fileName = self.config.simDir+"/index.html"
@@ -78,5 +77,5 @@ class simulator():
             f.write(htmlContent)
             f.close()
             self.log("Complete report generated in "+fileName, 1)
-            call([self.config.browser, fileName])
-
+            return fileName
+        return None

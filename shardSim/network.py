@@ -72,6 +72,7 @@ class network():
         figConf["colors"]       = ["g", "b", "c", "g", "y", "r" ]   # Colors
         figConf["labels"]       = ["Number of Peers", "2", "3"]     # Labels
         figConf["legCol"]       = 1                                 # Columns in the legend
+        figConf["hline"]        = sum(nodePeers)/len(nodePeers)     # Horizontal line for average
         figConf["nbDatasets"]   = 1                                 # Number of datasets
         figConf["datasets"]     = dataset                           # Datasets
         plotData(figConf)
