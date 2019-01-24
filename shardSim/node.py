@@ -27,11 +27,16 @@ class node():
         self.net = net
         self.nodeID = nodeID
         self.address = '0x%040x' % random.getrandbits(40 * 4)
+        se = [int(s) for s in self.config.simID.split("_")[1].split("-")]
+        self.seed = sum(se)%100
         self.time = 0
+        self.slot = 0
+        self.epoch = 0
         self.peers = []
         self.outQueue = []
         self.uncles = []
         self.blockChain = []
+        self.validators = []
         b = block(None, 0, 0)
         self.blockChain.append(b)
         self.ether = random.randint(0, 100)
@@ -39,6 +44,10 @@ class node():
             self.miner = True
         else:
             self.miner = False
+        if random.randint(0, 100) < self.config.validatorRatio:
+            self.val = True
+        else:
+            self.val = False
 
     def log(self, msg, verbosity):
         if verbosity <= self.config.verbosity:
@@ -58,11 +67,17 @@ class node():
             self.peers.append(target) # This assumes the petition will be received AND accepted
         self.id = 0
 
+    def validate(self):
+        self.log("I am validating", 3)
+
     def tick(self):
         self.listen()
         if self.miner:
             self.mine()
+        if self.val:
+            self.validate()
         self.cleanOutQueue()
+
         self.time += 1
 
     def cleanOutQueue(self):
@@ -128,6 +143,7 @@ class node():
                     self.blockChain.append(newBlock) # Add it to the main chain
                     self.log("New block %s number %d received" % (newBlock.hash[-4:], newBlock.number), 3)
                     message["source"] = self.nodeID
+                    self.slot = self.slot + 1
                     self.broadcast(message)
                     self.checkChain()
                 else:
@@ -140,12 +156,20 @@ class node():
                             self.log("Block %s already in the uncles list" % newBlock.hash[-4:], 3)
                     else:
                         self.log("WARNING : Node seems out of sync", 3)
+        elif message["header"] == "New validator":
+            source = message["source"]
+            if source not in self.validators:
+                self.validators.append(source)
+                self.log("Adding %d as validator" % source, 3)
+                self.broadcast(message)
+
 
     def mine(self):
         r = random.randint(0, int((self.topo.nbRanks * self.config.nodesPerRank * (self.config.minerRatio/100.0) * self.config.slotDuration) - 1))
         if (r == 0):
             b = block(self.blockChain[-1], self.nodeID, self.time)
             self.blockChain.append(b)
+            self.slot = self.slot + 1
             self.log("I have mined block %s number %d at time %d" % (b.hash[-4:], b.number, self.time), 1)
             message = {}
             message["header"] = "New block"

@@ -31,7 +31,8 @@ class configuration():
         self.minerRatio = 90
 
         # Beacon chain settings
-        self.validatorRatio = 50
+        self.validatorRatio = 10
+        self.epochLength = 64
 
         # Shards settings
         self.nbShards = 4
