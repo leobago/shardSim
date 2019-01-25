@@ -36,12 +36,19 @@ def mainReport(net, globalPeers):
                         line("p", "The simulation ran with a total of "+str(net.topo.nbRanks)+" MPIR ranks.")
                         line("p", "Each rank simulated "+str(net.config.nodesPerRank)+" simNodes.")
                         line("p", "In total, the execution simulated "+str(nbNodes)+" simNodes.")
-                        line("p", "Visualization of the P2P network:")
+                        line("h3", "Visualization of the P2P network")
                         with tag("a", href="net.png"):
                             doc.stag('img', src="net.png", width="900")
-                        line("p", "Number of peers per node:")
+                        line("h3", "Number of peers per node")
                         with tag("a", href="peers.png"):
                             doc.stag('img', src="peers.png")
+                        line("h3", "Block times")
+                        with tag("a", href="blockTimes.png"):
+                            doc.stag('img', src="blockTimes.png")
+                        line("h3", "Uncle Rate")
+                        with tag("a", href="uncleRate.png"):
+                            doc.stag('img', src="uncleRate.png")
+
                 with tag('tr'):
                     with tag('td', align="center"):
                         with tag('h2'):
@@ -119,6 +126,13 @@ def nodeReport(node):
                                         line("td", str(block.time), klass="chain")
                         else:
                             text("No uncle blocks.")
+
+                with tag('tr'):
+                    with tag('td', align="center"):
+                        line("h3", "Block Delays")
+                        with tag("a", href=str(node.nodeID)+"-blockDelays.png"):
+                            doc.stag('img', src=str(node.nodeID)+"-blockDelays.png")
+
                 with tag('tr'):
                     with tag('td', align="center"):
                         with tag('h2'):

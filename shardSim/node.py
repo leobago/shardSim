@@ -37,6 +37,7 @@ class node():
         self.uncles = []
         self.blockChain = []
         self.validators = []
+        self.blockArrival = []
         b = block(None, 0, 0)
         self.blockChain.append(b)
         self.ether = random.randint(0, 100)
@@ -92,8 +93,12 @@ class node():
         self.outQueue.append(sReq)
 
     def broadcast(self, message):
+        nbMessages = self.config.maxBroadcast
         for peer in self.peers:
             self.send(peer, message)
+            nbMessages = nbMessages - 1
+            if nbMessages == 0:
+                break
 
     def listen(self):
         status = MPI.Status()
@@ -140,6 +145,7 @@ class node():
                 self.log("Block %s already in the chain" % newBlock.hash[-4:], 3)
             else: # If new block not in the blockchain
                 if newBlock.number ==  (self.blockChain[-1].number + 1): # If it is the next block
+                    newBlock.arrivalTime = self.time
                     self.blockChain.append(newBlock) # Add it to the main chain
                     self.log("New block %s number %d received" % (newBlock.hash[-4:], newBlock.number), 3)
                     message["source"] = self.nodeID
@@ -155,7 +161,7 @@ class node():
                         else:
                             self.log("Block %s already in the uncles list" % newBlock.hash[-4:], 3)
                     else:
-                        self.log("WARNING : Node seems out of sync", 3)
+                        self.log("WARNING : Node seems out of sync", 1)
         elif message["header"] == "New validator":
             source = message["source"]
             if source not in self.validators:
@@ -168,6 +174,7 @@ class node():
         r = random.randint(0, int((self.topo.nbRanks * self.config.nodesPerRank * (self.config.minerRatio/100.0) * self.config.slotDuration) - 1))
         if (r == 0):
             b = block(self.blockChain[-1], self.nodeID, self.time)
+            b.arrivalTime = self.time
             self.blockChain.append(b)
             self.slot = self.slot + 1
             self.log("I have mined block %s number %d at time %d" % (b.hash[-4:], b.number, self.time), 1)
@@ -200,16 +207,82 @@ class node():
         dataset = []
         dataset.append(range(len(blockTimes)))
         dataset.append(blockTimes)
+        maxTime = max(blockTimes) + 1
         target = self.config.simDir+"/blockTimes.png"
         figConf = getFig("sbar")
         figConf["fileName"]     = target                            # Figure file name
+        figConf["figSize"]      = (9,3)                             # Figure size in inches
         figConf["xLabel"]       = "Block number"                    # Label of x axis
         figConf["yLabel"]       = "Time to Block (s)"               # Label of y axis
-        figConf["axis"]         = [0, len(blockTimes), 0, (max(blockTimes))+1]       # Axis limits
+        figConf["axis"]         = [0, len(blockTimes), 0, maxTime]  # Axis limits
         figConf["yGrid"]        = True                              # Enable x axis grid lines
-        figConf["colors"]       = ["b", "b", "c", "g", "y", "r" ]   # Colors
+        figConf["colors"]       = ["b", "c", "c", "g", "y", "r" ]   # Colors
         figConf["labels"]       = ["BlockTime", "4", "5", "6"]      # Labels
         figConf["hline"]        = sum(blockTimes)/len(blockTimes)   # Horizontal line for average
+        figConf["legCol"]       = 1                                 # Columns in the legend
+        figConf["nbDatasets"]   = 1                                 # Number of datasets
+        figConf["datasets"]     = dataset                           # Datasets
+        plotData(figConf)
+
+    def plotBlockDelays(self):
+        bt = []
+        delays = []
+        if len(self.blockChain) < 1:
+            self.log("WARNING: No blocks in this chain", 1)
+        for block in self.blockChain[1:]:
+            if block.arrivalTime >= block.time:
+                delays.append(block.arrivalTime - block.time)
+            else:
+                delays.append(0)
+        dataset = []
+        dataset.append(range(len(delays)))
+        dataset.append(delays)
+        maxTime = max(delays) + 1
+        target = self.config.simDir+"/"+str(self.nodeID)+"-blockDelays.png"
+        figConf = getFig("sbar")
+        figConf["fileName"]     = target                            # Figure file name
+        figConf["figSize"]      = (9,3)                             # Figure size in inches
+        figConf["xLabel"]       = "Block number"                    # Label of x axis
+        figConf["yLabel"]       = "Block Delay(s)"                  # Label of y axis
+        figConf["axis"]         = [0, len(delays), 0, maxTime]      # Axis limits
+        figConf["yGrid"]        = True                              # Enable x axis grid lines
+        figConf["colors"]       = ["c", "c", "c", "g", "y", "r" ]   # Colors
+        figConf["labels"]       = ["Block Delay", "4", "5", "6"]    # Labels
+        figConf["hline"]        = sum(delays)/len(delays)           # Horizontal line for average
+        figConf["legCol"]       = 1                                 # Columns in the legend
+        figConf["nbDatasets"]   = 1                                 # Number of datasets
+        figConf["datasets"]     = dataset                           # Datasets
+        plotData(figConf)
+
+
+    def plotUncleRate(self):
+        uncleGroup = 25
+        if len(self.uncles) < 1:
+            self.log("WARNING: No uncles to plot!", 1)
+        nbBlocks = self.blockChain[-1].number - self.blockChain[0].number
+        uncleRate = [0] * nbBlocks
+        for uncle in self.uncles:
+            un = uncle.number - self.blockChain[0].number
+            uncleRate[un] = uncleRate[un] + 1
+        ur = []
+        sliceStart = 0
+        while sliceStart < nbBlocks:
+            ur.append(sum(uncleRate[sliceStart:sliceStart+uncleGroup]))
+            sliceStart = sliceStart + uncleGroup
+        dataset = []
+        dataset.append(range(len(ur)))
+        dataset.append(ur)
+        target = self.config.simDir+"/uncleRate.png"
+        figConf = getFig("sbar")
+        figConf["fileName"]     = target                            # Figure file name
+        figConf["figSize"]      = (9,3)                             # Figure size in inches
+        figConf["xLabel"]       = "Blocks"                          # Label of x axis
+        figConf["yLabel"]       = "Number of uncles"                # Label of y axis
+        figConf["axis"]         = [0, len(ur), 0, (max(ur))+1]      # Axis limits
+        figConf["yGrid"]        = True                              # Enable x axis grid lines
+        figConf["colors"]       = ["r", "b", "c", "g", "y", "r" ]   # Colors
+        figConf["labels"]       = ["Uncle Rate (25 blocks per bar)"]# Labels
+        figConf["hline"]        = sum(ur)/len(ur)                   # Horizontal line for average
         figConf["legCol"]       = 1                                 # Columns in the legend
         figConf["nbDatasets"]   = 1                                 # Number of datasets
         figConf["datasets"]     = dataset                           # Datasets

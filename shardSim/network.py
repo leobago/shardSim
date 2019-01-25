@@ -65,6 +65,7 @@ class network():
         target = self.config.simDir+"/peers.png"
         figConf = getFig("sbar")
         figConf["fileName"]     = target                            # Figure file name
+        figConf["figSize"]      = (9,3)                             # Figure size in inches
         figConf["xLabel"]       = "Nodes"                           # Label of x axis
         figConf["yLabel"]       = "Number of Peers"                 # Label of y axis
         figConf["axis"]         = [0, nbNodes, 0, max(nodePeers)+1] # Axis limits

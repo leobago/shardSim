@@ -65,12 +65,14 @@ class simulator():
         peerList = []
         for node in self.net.nodes:
             peerList.append([node.nodeID, node.peers])
+            node.plotBlockDelays()
             node.report()
         globalPeers = self.topo.comm.gather(peerList, root=0)
         if self.topo.rank == 0:
             self.net.plotP2P(globalPeers)
             observer = random.randint(0, self.config.nodesPerRank-1)
             self.net.nodes[observer].plotBlockTimes()
+            self.net.nodes[observer].plotUncleRate()
             htmlContent = mainReport(self.net, globalPeers)
             fileName = self.config.simDir+"/index.html"
             f =  open(fileName, "w")

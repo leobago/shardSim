@@ -122,8 +122,7 @@ def plotData(figConf):
         bottoms = [0] * len(figConf["datasets"][0])
         #colW = figConf["datasets"][0][1] - figConf["datasets"][0][0]
         for i in range(figConf["nbDatasets"]):
-            plt.bar(figConf["datasets"][0], figConf["datasets"][i+1], align="center",
-                    bottom=bottoms, color=figConf["colors"][i], label=figConf["labels"][i], linewidth=figConf["lineWidth"])
+            plt.bar(figConf["datasets"][0], figConf["datasets"][i+1], align="center", bottom=bottoms, color=figConf["colors"][i], label=figConf["labels"][i], linewidth=figConf["lineWidth"])
             bottoms = map(add, bottoms, figConf["datasets"][i+1])
         plt.legend(loc=figConf["legLoc"], ncol=figConf["legCol"], prop={'size':figConf["legSize"]})
         plt.axis(figConf["axis"])
@@ -154,7 +153,8 @@ def plotData(figConf):
                     c=figConf["datasets"][2], s=sizes, cmap=figConf["cmap"], edgecolors='None', alpha=0.75)
         plt.colorbar(orientation=figConf["orientation"])
     plt.savefig(figConf["fileName"], bbox_inches='tight')
-    print("Figure "+figConf["fileName"]+" generated.")
+    plt.clf()
+    #print("Figure "+figConf["fileName"]+" generated.")
 
 def plotNetwork(nodes, edges, nodePeers, fileName):
     g = nx.Graph()
@@ -179,6 +179,6 @@ def plotNetwork(nodes, edges, nodePeers, fileName):
     warnings.resetwarnings()
     nx.draw_networkx_labels(g, pos, node_labels, font_size=8)
     plt.savefig(fileName)
-    print("Figure "+fileName+" generated.")
+    #print("Figure "+fileName+" generated.")
 
 
