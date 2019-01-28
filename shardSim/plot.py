@@ -153,7 +153,7 @@ def plotData(figConf):
                     c=figConf["datasets"][2], s=sizes, cmap=figConf["cmap"], edgecolors='None', alpha=0.75)
         plt.colorbar(orientation=figConf["orientation"])
     plt.savefig(figConf["fileName"], bbox_inches='tight')
-    plt.clf()
+    plt.close(fig)
     #print("Figure "+figConf["fileName"]+" generated.")
 
 def plotNetwork(nodes, edges, nodePeers, fileName):

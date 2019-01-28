@@ -48,6 +48,10 @@ def mainReport(net, globalPeers):
                         line("h3", "Uncle Rate")
                         with tag("a", href="uncleRate.png"):
                             doc.stag('img', src="uncleRate.png")
+                        line("h3", "Last Block")
+                        with tag("a", href="lastBlock.png"):
+                            doc.stag('img', src="lastBlock.png")
+
 
                 with tag('tr'):
                     with tag('td', align="center"):
@@ -130,8 +134,21 @@ def nodeReport(node):
                 with tag('tr'):
                     with tag('td', align="center"):
                         line("h3", "Block Delays")
-                        with tag("a", href=str(node.nodeID)+"-blockDelays.png"):
-                            doc.stag('img', src=str(node.nodeID)+"-blockDelays.png")
+                        if (len(node.blockChain) > 1):
+                            with tag("a", href=str(node.nodeID)+"-blockDelays.png"):
+                                doc.stag('img', src=str(node.nodeID)+"-blockDelays.png")
+                        else:
+                            line("p", "Not enough blocks to plot this figure.")
+
+                with tag('tr'):
+                    with tag('td', align="center"):
+                        line("h3", "Messages transmitted")
+                        if (len(node.blockChain) > 1):
+                            with tag("a", href=str(node.nodeID)+"-messages.png"):
+                                doc.stag('img', src=str(node.nodeID)+"-messages.png")
+                        else:
+                            line("p", "Not enough time to plot this figure.")
+
 
                 with tag('tr'):
                     with tag('td', align="center"):
@@ -141,6 +158,41 @@ def nodeReport(node):
                             with tag("a", href=str(peer)+".html"):
                                     text(str(peer))
                         doc.stag('br')
+
+                with tag('tr'):
+                    with tag('td', align="center"):
+                        with tag('h2'):
+                            text("Detailed log")
+                        with tag("a", href=str(node.nodeID)+"-log.html"):
+                                    text("Log")
+                        doc.stag('br')
+
+                with tag('tr'):
+                    with tag('td', align="center"):
+                        with tag('h6'):
+                            text("Trace generated with Sharding Simulator ")
+                            with tag("a", href="https://github.com/leobago/shardSim"):
+                                text("shardSim")
+
+    return indent(doc.getvalue())
+
+def nodeLogReport(node):
+    doc, tag, text, line = Doc().ttl()
+    with tag('html'):
+        with tag('head'):
+            doc.stag("link", rel="stylesheet", href="styles.css")
+        with tag('body'):
+            with tag('table', width="1000"):
+                with tag('tr'):
+                    with tag('td', align="center"):
+                        with tag('h1'):
+                            with tag('a', href="index.html"):
+                                text("Sharding Simulation "+node.config.simID+" - Node "+str(node.nodeID)+" log")
+                with tag('tr'):
+                    with tag('td', align="left"):
+                        for l in node.logs:
+                            line("p", l)
+
                 with tag('tr'):
                     with tag('td', align="center"):
                         with tag('h6'):

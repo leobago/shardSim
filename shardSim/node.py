@@ -13,8 +13,7 @@
 import random
 from mpi4py import MPI
 
-
-from .report import nodeReport
+from .report import nodeReport, nodeLogReport
 from .plot import getFig, plotData
 from .block import block
 
@@ -32,9 +31,12 @@ class node():
         self.time = 0
         self.slot = 0
         self.epoch = 0
+        self.logs = []
         self.peers = []
         self.outQueue = []
         self.uncles = []
+        self.msgSent = []
+        self.msgRecv = []
         self.blockChain = []
         self.validators = []
         self.blockArrival = []
@@ -52,8 +54,12 @@ class node():
 
     def log(self, msg, verbosity):
         if verbosity <= self.config.verbosity:
-            idmsg = "[%04d] : " % self.nodeID
+            idmsg = "[%05d] : " % self.nodeID
             print(idmsg + msg)
+        if verbosity <= self.config.verbosity + 2:
+            timsg = "[%05d] : " % self.time
+            self.logs.append(timsg + msg)
+
 
     def bootstrap(self):
         for i in range(self.config.nbPeers):
@@ -87,27 +93,37 @@ class node():
             sReq.wait()
 
     def send(self, target, message):
-        targetRank = int(target/100)
+        targetRank = int(target/self.config.maxNodesPerRank)
         self.log("Message sent to node %d in rank %d" % (target, targetRank), 3)
         sReq = self.topo.comm.isend(message, dest=targetRank, tag=target)
         self.outQueue.append(sReq)
+        while self.time >= len(self.msgSent):
+            self.msgSent.append(0)
+        self.msgSent[self.time] = self.msgSent[self.time] + 1
 
     def broadcast(self, message):
         nbMessages = self.config.maxBroadcast
-        for peer in self.peers:
+        if nbMessages > len(self.peers):
+            nbMessages = len(self.peers)
+        bcList = random.sample(self.peers, nbMessages)
+        for peer in bcList:
             self.send(peer, message)
-            nbMessages = nbMessages - 1
-            if nbMessages == 0:
-                break
 
     def listen(self):
         status = MPI.Status()
-        flag = self.topo.comm.iprobe(source=MPI.ANY_SOURCE, tag=self.nodeID, status=status)
-        if flag:
-            source = status.Get_source()
-            message = self.topo.comm.recv(source=source, tag=self.nodeID)
-            self.log("Message %s received from %d" % (str(message), source), 3)
-            self.classifyMessage(message)
+        listening = self.config.maxReceive
+        while listening > 0:
+            listening = listening - 1
+            flag = self.topo.comm.iprobe(source=MPI.ANY_SOURCE, tag=self.nodeID, status=status)
+            if flag:
+                source = status.Get_source()
+                message = self.topo.comm.recv(source=source, tag=self.nodeID)
+                self.log("Message %s received from %d" % (str(message), source), 3)
+                self.classifyMessage(message)
+                while self.time >= len(self.msgRecv):
+                    self.msgRecv.append(0)
+                self.msgRecv[self.time] = self.msgRecv[self.time] + 1
+
 
     def checkChain(self):
         last = len(self.blockChain) - 1
@@ -125,7 +141,7 @@ class node():
                     self.log("Blockchain reorganized with block %s" % (self.blockChain[last-1].hash[-4:]), 2)
                 else:
                     self.log("WARNING : Blockchain could not be reorganized for block number %d" % self.blockChain[last].number, 1)
-            last = last -1
+            last = last - 1
 
     def classifyMessage(self, message):
         if message["header"] == "New peer":
@@ -160,8 +176,24 @@ class node():
                             self.broadcast(message)
                         else:
                             self.log("Block %s already in the uncles list" % newBlock.hash[-4:], 3)
-                    else:
+                    else: # If the block is ahead of the next block
+                        nbMissingBlocks = newBlock.number - self.blockChain[-1].number
                         self.log("WARNING : Node seems out of sync", 1)
+                        for i in range(nbMissingBlocks-1):
+                            b = block(None, 0, 0)
+                            b.arrivalTime = self.time
+                            b.time = self.time
+                            b.number = self.blockChain[-1].number + 1
+                            self.blockChain.append(b)
+                            self.slot = self.slot + 1
+                        newBlock.arrivalTime = self.time
+                        self.blockChain.append(newBlock) # Add it to the main chain
+                        self.log("New block %s number %d received" % (newBlock.hash[-4:], newBlock.number), 3)
+                        message["source"] = self.nodeID
+                        self.slot = self.slot + 1
+                        self.broadcast(message)
+                        self.checkChain()
+
         elif message["header"] == "New validator":
             source = message["source"]
             if source not in self.validators:
@@ -193,6 +225,12 @@ class node():
         f =  open(fileName, "w")
         f.write(htmlContent)
         f.close()
+        htmlLogContent = nodeLogReport(self)
+        fileName = self.config.simDir+"/"+str(self.nodeID)+"-log.html"
+        f =  open(fileName, "w")
+        f.write(htmlLogContent)
+        f.close()
+
 
     def plotBlockTimes(self):
         bt = []
@@ -234,6 +272,11 @@ class node():
                 delays.append(block.arrivalTime - block.time)
             else:
                 delays.append(0)
+        if len(delays) < 1 and len(self.blockChain) > 0:
+            self.log("WARNING: Block delays list is empty but not the blockChain", 1)
+            print(len(self.blockChain))
+            print(delays)
+
         dataset = []
         dataset.append(range(len(delays)))
         dataset.append(delays)
@@ -283,8 +326,34 @@ class node():
         figConf["colors"]       = ["r", "b", "c", "g", "y", "r" ]   # Colors
         figConf["labels"]       = ["Uncle Rate (25 blocks per bar)"]# Labels
         figConf["hline"]        = sum(ur)/len(ur)                   # Horizontal line for average
+        figConf["legLoc"]       = 1                                 # Legend location
         figConf["legCol"]       = 1                                 # Columns in the legend
         figConf["nbDatasets"]   = 1                                 # Number of datasets
+        figConf["datasets"]     = dataset                           # Datasets
+        plotData(figConf)
+
+    def plotMsgs(self):
+        last = min(len(self.msgSent), len(self.msgRecv))
+        lmax = max(max(self.msgSent), max(self.msgRecv)) + 1
+        del self.msgSent[last:]
+        del self.msgRecv[last:]
+        dataset = []
+        dataset.append(range(last))
+        dataset.append(self.msgSent)
+        dataset.append(self.msgRecv)
+        target = self.config.simDir+"/"+str(self.nodeID)+"-messages.png"
+        figConf = getFig("plot")
+        figConf["fileName"]     = target                            # Figure file name
+        figConf["figSize"]      = (9,3)                             # Figure size in inches
+        figConf["xLabel"]       = "Time (s)"                        # Label of x axis
+        figConf["yLabel"]       = "Number of messages"              # Label of y axis
+        figConf["axis"]         = [0, last, 0, lmax]                # Axis limits
+        figConf["yGrid"]        = True                              # Enable x axis grid lines
+        figConf["markers"]      = ["r-", "b-", "g", "y", "r" ]      # Colors
+        figConf["labels"]       = ["Sent", "Received"]              # Labels
+        figConf["legLoc"]       = 1                                 # Legend location
+        figConf["legCol"]       = 1                                 # Columns in the legend
+        figConf["nbDatasets"]   = 2                                 # Number of datasets
         figConf["datasets"]     = dataset                           # Datasets
         plotData(figConf)
 

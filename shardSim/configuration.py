@@ -18,8 +18,8 @@ class configuration():
 
     def __init__(self):
         # Topology settings
-        self.nodesPerRank = 16
-        self.maxNodesPerRank = 100
+        self.nodesPerRank = 8
+        self.maxNodesPerRank = 10
 
         # Time settings
         self.simTime = 1000
@@ -29,7 +29,8 @@ class configuration():
         self.slotDuration = 16
         self.nbPeers = 4
         self.minerRatio = 90
-        self.maxBroadcast = 4
+        self.maxBroadcast = 9
+        self.maxReceive = 9
 
         # Beacon chain settings
         self.validatorRatio = 10

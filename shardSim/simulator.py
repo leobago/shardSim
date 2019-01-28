@@ -18,6 +18,7 @@ from .network import network
 from .configuration import configuration
 from .topology import topology
 from .report import mainReport
+from .plot import getFig, plotData
 
 class simulator():
 
@@ -63,13 +64,20 @@ class simulator():
 
     def postProcess(self):
         peerList = []
+        lastBlock = []
         for node in self.net.nodes:
             peerList.append([node.nodeID, node.peers])
-            node.plotBlockDelays()
+            lastBlock.append(node.blockChain[-1].number - node.blockChain[0].number)
+            if len(node.blockChain) > 1:
+                node.plotBlockDelays()
+            node.plotMsgs()
             node.report()
         globalPeers = self.topo.comm.gather(peerList, root=0)
+        lb = self.topo.comm.gather(lastBlock, root=0)
         if self.topo.rank == 0:
             self.net.plotP2P(globalPeers)
+            lastBlock = [item for sublist in lb for item in sublist]
+            self.plotLastBlock(lastBlock)
             observer = random.randint(0, self.config.nodesPerRank-1)
             self.net.nodes[observer].plotBlockTimes()
             self.net.nodes[observer].plotUncleRate()
@@ -81,3 +89,24 @@ class simulator():
             self.log("Complete report generated in "+fileName, 1)
             return fileName
         return None
+
+    def plotLastBlock(self, lastBlock):
+        dataset = []
+        dataset.append(range(len(lastBlock)))
+        dataset.append(lastBlock)
+        target = self.config.simDir+"/lastBlock.png"
+        figConf = getFig("sbar")
+        figConf["fileName"]     = target                            # Figure file name
+        figConf["figSize"]      = (9,3)                             # Figure size in inches
+        figConf["xLabel"]       = "Nodes"                           # Label of x axis
+        figConf["yLabel"]       = "Last Block"                      # Label of y axis
+        figConf["axis"]         = [0, len(lastBlock), 0, max(lastBlock)+1] # Axis limits
+        figConf["yGrid"]        = True                              # Enable x axis grid lines
+        figConf["colors"]       = ["y", "b", "c", "g", "y", "r" ]   # Colors
+        figConf["labels"]       = ["Last Block", "2", "3"]          # Labels
+        figConf["legCol"]       = 1                                 # Columns in the legend
+        figConf["legLoc"]       = 3                                 # Legend location
+        figConf["nbDatasets"]   = 1                                 # Number of datasets
+        figConf["datasets"]     = dataset                           # Datasets
+        plotData(figConf)
+
