@@ -10,6 +10,9 @@ doc:
 		@mkdir -p $(DOC)
 		doxygen $(DOC)/Doxyfile.in
 
+package:
+		tar czvf ../shardSim.tgz ./* --exclude-vcs --exclude='*.pyc'
+
 clean:
 		$(RM) -rf $(DOC)/*/* $(DAT)/*
 
