@@ -72,10 +72,26 @@ class node():
                 target = target + random.randint(0, self.config.nodesPerRank-1)
             self.send(target, message)
             self.peers.append(target) # This assumes the petition will be received AND accepted
+        self.listen()
+        self.cleanOutQueue()
         self.id = 0
+        if self.val:
+            message = {}
+            message["header"] = "New validator"
+            message["source"] = self.nodeID
+            self.broadcast(message)
+        self.listen()
+        self.cleanOutQueue()
+        if self.val:
+            print(sorted(self.validators))
 
     def validate(self):
-        self.log("I am validating", 3)
+        self.log("I am validating", 2)
+        if (self.time > 0) and (self.time % self.config.slotDuration == 0):
+            self.slot = self.slot + 1
+            if self.slot % self.config.epochLength == 0:
+                self.epoch = self.epoch + 1
+                #print(str(self.time) + " - " + str(self.slot) + " - " + str(self.epoch) )
 
     def tick(self):
         self.listen()
@@ -165,7 +181,6 @@ class node():
                     self.blockChain.append(newBlock) # Add it to the main chain
                     self.log("New block %s number %d received" % (newBlock.hash[-4:], newBlock.number), 3)
                     message["source"] = self.nodeID
-                    self.slot = self.slot + 1
                     self.broadcast(message)
                     self.checkChain()
                 else:
@@ -185,12 +200,10 @@ class node():
                             b.time = self.time
                             b.number = self.blockChain[-1].number + 1
                             self.blockChain.append(b)
-                            self.slot = self.slot + 1
                         newBlock.arrivalTime = self.time
                         self.blockChain.append(newBlock) # Add it to the main chain
                         self.log("New block %s number %d received" % (newBlock.hash[-4:], newBlock.number), 3)
                         message["source"] = self.nodeID
-                        self.slot = self.slot + 1
                         self.broadcast(message)
                         self.checkChain()
 
@@ -203,19 +216,17 @@ class node():
 
 
     def mine(self):
-        r = random.randint(0, int((self.topo.nbRanks * self.config.nodesPerRank * (self.config.minerRatio/100.0) * self.config.slotDuration) - 1))
+        r = random.randint(0, int((self.topo.nbRanks * self.config.nodesPerRank * (self.config.minerRatio/100.0) * self.config.minerSlot) - 1))
         if (r == 0):
             b = block(self.blockChain[-1], self.nodeID, self.time)
             b.arrivalTime = self.time
             self.blockChain.append(b)
-            self.slot = self.slot + 1
             self.log("I have mined block %s number %d at time %d" % (b.hash[-4:], b.number, self.time), 1)
             message = {}
             message["header"] = "New block"
             message["source"] = self.nodeID
             message["block"] = b
             self.broadcast(message)
-
         else:
             self.log("Random number was %d" % r, 4)
 

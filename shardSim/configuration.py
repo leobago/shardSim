@@ -26,19 +26,20 @@ class configuration():
         self.timeSpeed = 100
 
         # Main chain settings
-        self.slotDuration = 16
+        self.minerSlot = 16
         self.nbPeers = 4
         self.minerRatio = 90
         self.maxBroadcast = 9
         self.maxReceive = 9
 
         # Beacon chain settings
-        self.validatorRatio = 10
+        self.validatorRatio = 50
         self.epochLength = 64
+        self.slotDuration = 6
 
         # Shards settings
-        self.nbShards = 4
-        self.committeeSize = 8
+        self.nbShards = 2
+        self.committeeSize = 4
 
         # MPI settings
         self.maxOutQueue = 50
