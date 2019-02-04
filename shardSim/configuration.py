@@ -33,8 +33,8 @@ class configuration():
         self.maxReceive = 9
 
         # Beacon chain settings
-        self.validatorRatio = 50
-        self.epochLength = 64
+        self.validatorRatio = 80
+        self.epochLength = 16
         self.slotDuration = 6
 
         # Shards settings
@@ -47,7 +47,6 @@ class configuration():
         # Post-processing setting
         self.verbosity = 1
         self.resultsDir = "data"
-        self.browser = "google-chrome"
         now = datetime.datetime.now()
         simID = now.strftime("%Y-%m-%d_%H-%M-%S")
         SID = [simID] * MPI.COMM_WORLD.Get_size()

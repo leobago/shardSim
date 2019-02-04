@@ -51,6 +51,14 @@ def mainReport(net, globalPeers):
                         line("h3", "Last Block")
                         with tag("a", href="lastBlock.png"):
                             doc.stag('img', src="lastBlock.png")
+                        line("h3", "Beacon Block Times")
+                        with tag("a", href="beaconTimes.png"):
+                            doc.stag('img', src="beaconTimes.png")
+                        line("h3", "Beacon Block Miners")
+                        with tag("a", href="beaconMiners.png"):
+                            doc.stag('img', src="beaconMiners.png")
+
+
 
 
                 with tag('tr'):
@@ -130,6 +138,27 @@ def nodeReport(node):
                                         line("td", str(block.time), klass="chain")
                         else:
                             text("No uncle blocks.")
+                with tag('tr'):
+                    with tag('td', align="center"):
+                        with tag('h2'):
+                            text("Beacon Chain")
+                        if node.uncles:
+                            with tag('table', width="900", klass="chain"):
+                                with tag('tr'):
+                                    line("td", "Number", klass="header")
+                                    line("td", "Hash", klass="header")
+                                    line("td", "Parent", klass="header")
+                                    line("td", "Miner", klass="header")
+                                    line("td", "Time", klass="header")
+                                for block in node.beaconChain[::-1]:
+                                    with tag('tr'):
+                                        line("td", str(block.number), klass="chain")
+                                        line("td", str(block.hash[-16:]), klass="chain")
+                                        line("td", str(block.parent[-16:]), klass="chain")
+                                        line("td", str(block.miner), klass="chain")
+                                        line("td", str(block.time), klass="chain")
+                        else:
+                            text("No beacon blocks.")
 
                 with tag('tr'):
                     with tag('td', align="center"):

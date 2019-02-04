@@ -80,6 +80,8 @@ class simulator():
             self.plotLastBlock(lastBlock)
             observer = random.randint(0, self.config.nodesPerRank-1)
             self.net.nodes[observer].plotBlockTimes()
+            self.net.nodes[observer].plotBeaconTimes()
+            self.net.nodes[observer].plotBeaconMiners()
             self.net.nodes[observer].plotUncleRate()
             htmlContent = mainReport(self.net, globalPeers)
             fileName = self.config.simDir+"/index.html"
