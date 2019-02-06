@@ -129,7 +129,6 @@ class node():
         if self.val:
             self.validate()
         self.cleanOutQueue()
-
         self.time += 1
 
     def cleanOutQueue(self):
@@ -250,12 +249,33 @@ class node():
                 else:
                     if newBlock.number ==  (self.beaconChain[-1].number + 1): # If it is the next block
                         newBlock.arrivalTime = self.time
-                        self.beaconChain.append(newBlock) # Add it to the main chain
+                        self.beaconChain.append(newBlock) # Add it to the beacon chain
                         self.log("New beacon block %s number %d received" % (newBlock.hash[-4:], newBlock.number), 3)
                         message["source"] = self.nodeID
                         self.broadcast(message)
                     else:
-                        self.log("WARNING : Beacon chain out of sync!")
+                        if newBlock.number <=  (self.beaconChain[-1].number): # If it is a past block
+                            newBlock.arrivalTime = self.time
+                            index = newBlock.number - self.beaconChain[0].number
+                            self.beaconChain[index] = newBlock
+                            self.log("New beacon block %s number %d received" % (newBlock.hash[-4:], newBlock.number), 3)
+                            message["source"] = self.nodeID
+                            self.broadcast(message)
+                        else: # If the block is ahead of the next block
+                            nbMissingBlocks = newBlock.number - self.beaconChain[-1].number
+                            self.log("WARNING : Beacon chain seems out of sync", 1)
+                            for i in range(nbMissingBlocks-1):
+                                b = block(None, 0, 0)
+                                b.arrivalTime = self.time
+                                b.time = self.time
+                                b.number = self.blockChain[-1].number + 1
+                                self.beaconChain.append(b)
+                            newBlock.arrivalTime = self.time
+                            self.beaconChain.append(newBlock) # Add it to the beacon chain
+                            self.log("New beacon block %s number %d received" % (newBlock.hash[-4:], newBlock.number), 3)
+                            message["source"] = self.nodeID
+                            self.broadcast(message)
+                            #self.checkChain()
 
         elif message["header"] == "New validator":
             source = message["source"]
@@ -296,24 +316,28 @@ class node():
 
     def plotBeaconMiners(self):
         beaconMiners = [0] * (self.topo.nbRanks * self.config.maxNodesPerRank)
-        for block in self.beaconChain:
+        for block in self.beaconChain[]:
             m = block.miner
             beaconMiners[m] = beaconMiners[m] + 1
+        vals = []
+        for vi in range(len(beaconMiners)):
+            if (vi in self.validators):
+                vals.append(beaconMiners[vi])
         dataset = []
-        dataset.append(range(len(beaconMiners)))
-        dataset.append(beaconMiners)
-        maxTime = max(beaconMiners) + 1
+        dataset.append(range(len(vals)))
+        dataset.append(vals)
+        maxTime = max(vals) + 1
         target = self.config.simDir+"/beaconMiners.png"
         figConf = getFig("sbar")
         figConf["fileName"]     = target                            # Figure file name
         figConf["figSize"]      = (9,3)                             # Figure size in inches
-        figConf["xLabel"]       = "Nodes"                           # Label of x axis
+        figConf["xLabel"]       = "Validators"                      # Label of x axis
         figConf["yLabel"]       = "Blocks Mined"                    # Label of y axis
-        figConf["axis"]         = [0, len(beaconMiners), 0, maxTime]# Axis limits
+        figConf["axis"]         = [0, len(vals), 0, maxTime]        # Axis limits
         figConf["yGrid"]        = True                              # Enable x axis grid lines
         figConf["colors"]       = ["m", "c", "c", "g", "y", "r" ]   # Colors
-        figConf["labels"]       = ["Beacon Block Miners", "6"]      # Labels
-        figConf["hline"]        = sum(beaconMiners)/len(beaconMiners)# Horizontal line for average
+        figConf["labels"]       = ["Beacon Blocks Mined", "6"]      # Labels
+        figConf["hline"]        = sum(vals)/len(vals)               # Horizontal line for average
         figConf["legCol"]       = 1                                 # Columns in the legend
         figConf["nbDatasets"]   = 1                                 # Number of datasets
         figConf["datasets"]     = dataset                           # Datasets
