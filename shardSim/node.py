@@ -96,7 +96,7 @@ class node():
                 self.epoch = self.epoch + 1
                 if self.epoch > 0:
                     if len(self.validators) < self.config.epochLength:
-                        self.log("WARNING : Not enough validators")
+                        self.log("WARNING : Not enough validators", 1)
                     vl = getShuffle(self.validators, self.seed)
                     self.epochCommittees = splitCommittees(vl, self.config.epochLength)
                     self.seed = (self.seed * self.epoch) % 100
@@ -316,7 +316,7 @@ class node():
 
     def plotBeaconMiners(self):
         beaconMiners = [0] * (self.topo.nbRanks * self.config.maxNodesPerRank)
-        for block in self.beaconChain[]:
+        for block in self.beaconChain:
             m = block.miner
             beaconMiners[m] = beaconMiners[m] + 1
         vals = []
