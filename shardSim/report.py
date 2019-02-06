@@ -31,9 +31,9 @@ def mainReport(net, globalPeers):
                 with tag('tr'):
                     with tag('td', align="center"):
                         with tag('h2'):
-                            text("P2P Network")
+                            text("P2P Network Statistics")
                         nbNodes = net.topo.nbRanks * net.config.nodesPerRank
-                        line("p", "The simulation ran with a total of "+str(net.topo.nbRanks)+" MPIR ranks.")
+                        line("p", "The simulation ran with a total of "+str(net.topo.nbRanks)+" MPI ranks.")
                         line("p", "Each rank simulated "+str(net.config.nodesPerRank)+" simNodes.")
                         line("p", "In total, the execution simulated "+str(nbNodes)+" simNodes.")
                         line("h3", "Visualization of the P2P network")
@@ -42,6 +42,11 @@ def mainReport(net, globalPeers):
                         line("h3", "Number of peers per node")
                         with tag("a", href="peers.png"):
                             doc.stag('img', src="peers.png")
+
+                with tag('tr'):
+                    with tag('td', align="center"):
+                        with tag('h2'):
+                            text("Main Chain Statistics")
                         line("h3", "Block times")
                         with tag("a", href="blockTimes.png"):
                             doc.stag('img', src="blockTimes.png")
@@ -51,15 +56,17 @@ def mainReport(net, globalPeers):
                         line("h3", "Last Block")
                         with tag("a", href="lastBlock.png"):
                             doc.stag('img', src="lastBlock.png")
+
+                with tag('tr'):
+                    with tag('td', align="center"):
+                        with tag('h2'):
+                            text("Beacon Chain Statistics")
                         line("h3", "Beacon Block Times")
                         with tag("a", href="beaconTimes.png"):
                             doc.stag('img', src="beaconTimes.png")
-                        line("h3", "Beacon Block Miners")
+                        line("h3", "Beacon Block Mined")
                         with tag("a", href="beaconMiners.png"):
                             doc.stag('img', src="beaconMiners.png")
-
-
-
 
                 with tag('tr'):
                     with tag('td', align="center"):
