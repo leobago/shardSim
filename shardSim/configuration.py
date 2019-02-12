@@ -22,15 +22,16 @@ class configuration():
         self.maxNodesPerRank = 10
 
         # Time settings
-        self.simTime = 1000
+        self.simTime = 4000
         self.timeSpeed = 100
+        self.syncTime = 5
 
         # Main chain settings
         self.minerSlot = 16
         self.nbPeers = 4
         self.minerRatio = 90
-        self.maxBroadcast = 9
-        self.maxReceive = 9
+        self.maxBroadcast = 8
+        self.maxReceive = 32
 
         # Beacon chain settings
         self.validatorRatio = 80
@@ -42,7 +43,7 @@ class configuration():
         self.committeeSize = 4
 
         # MPI settings
-        self.maxOutQueue = 50
+        self.maxOutQueue = 16
 
         # Post-processing setting
         self.verbosity = 1

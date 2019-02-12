@@ -10,8 +10,9 @@
 ## * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 
 
-import random
+import random, sys
 from mpi4py import MPI
+
 
 from .report import nodeReport, nodeLogReport
 from .plot import getFig, plotData
@@ -19,8 +20,16 @@ from .block import block
 from .tools import getShuffle, splitCommittees
 
 
+##  This class represents a node in the peer to peer network. It includes
+#   miners as well as validators; good or bad actors in the network.
 class node():
 
+    ##  This method listen for messages from other nodes
+    #   @param  self    Pointer to this node.
+    #   @param  config  Configuration for the current execution.
+    #   @param  topo    MPI topology in number of ranks and nodes per rank.
+    #   @param  net     The entire peer to perr network with the list of nodes.
+    #   @param  nodeID  This node ID. An integer.
     def __init__(self, config, topo, net, nodeID):
         self.config = config
         self.topo = topo
@@ -33,38 +42,45 @@ class node():
         self.slot = 0
         self.epoch = 0
         self.logs = []
+        self.nodes = []
         self.peers = []
-        self.outQueue = []
         self.uncles = []
         self.msgSent = []
         self.msgRecv = []
+        self.outQueue = []
+        self.lostMsgs = []
         self.proposers = []
         self.blockChain = []
         self.beaconChain = []
         self.validators = []
+        self.beaconPending = {}
         self.epochCommittees = []
         self.currentCommittee = []
         self.blockArrival = []
         b = block(None, 0, 0)
         self.blockChain.append(b)
         self.ether = random.randint(0, 100)
+        self.val = False
         if random.randint(0, 100) < self.config.minerRatio:
             self.miner = True
         else:
             self.miner = False
-        if random.randint(0, 100) < self.config.validatorRatio:
-            self.val = True
+
+    def log(self, msg, verbosity, nodeID=-1):
+        if nodeID == -1:
+            if verbosity <= self.config.verbosity:
+                idmsg = "[%05d] : " % self.nodeID
+                print(idmsg + msg)
+                sys.stdout.flush()
+            if verbosity <= self.config.verbosity + 2:
+                timsg = "[%05d] : " % self.time
+                self.logs.append(timsg + msg)
         else:
-            self.val = False
-
-    def log(self, msg, verbosity):
-        if verbosity <= self.config.verbosity:
-            idmsg = "[%05d] : " % self.nodeID
-            print(idmsg + msg)
-        if verbosity <= self.config.verbosity + 2:
-            timsg = "[%05d] : " % self.time
-            self.logs.append(timsg + msg)
-
+            if self.nodeID == nodeID:
+                idmsg = "[%05d] : " % self.nodeID
+                timsg = "[%05d] : " % self.time
+                print(idmsg + timsg + msg)
+                sys.stdout.flush()
 
     def bootstrap(self):
         for i in range(self.config.nbPeers):
@@ -79,17 +95,16 @@ class node():
             self.peers.append(target) # This assumes the petition will be received AND accepted
         self.listen()
         self.cleanOutQueue()
-        self.id = 0
-        if self.val:
-            message = {}
-            message["header"] = "New validator"
-            message["source"] = self.nodeID
-            self.broadcast(message)
-        self.listen()
-        self.cleanOutQueue()
+        self.log("List of peers created.", 2)
+        for r in range(self.topo.nbRanks):
+            for n in range(self.config.nodesPerRank):
+                self.nodes.append((r * self.config.maxNodesPerRank) + n)
+                if (self.seed % self.config.nodesPerRank) != n:
+                    self.validators.append((r * self.config.maxNodesPerRank) + n)
+                    self.val = 1
+        self.log("Node bootstrap executed.", 2)
 
     def validate(self):
-        self.log("I am validating", 2)
         if (self.time > 0) and (self.time % self.config.slotDuration == 0):
             self.slot = self.slot + 1
             if self.slot % self.config.epochLength == 0:
@@ -100,7 +115,10 @@ class node():
                     vl = getShuffle(self.validators, self.seed)
                     self.epochCommittees = splitCommittees(vl, self.config.epochLength)
                     self.seed = (self.seed * self.epoch) % 100
-                    #print(str(self.time) + " - " + str(self.slot) + " - " + str(self.epoch) )
+                    #if self.nodeID == 0:
+                        #print(self.epochCommittees)
+                        #print(self.seed)
+                        #print(str(self.time) + " - " + str(self.slot) + " - " + str(self.epoch) )
             if self.epoch > 0:
                 self.currentCommittee = self.epochCommittees[self.slot%self.config.epochLength]
                 self.proposers.append(self.currentCommittee[0])
@@ -114,13 +132,20 @@ class node():
                         b.time = self.time
                     b.arrivalTime = self.time
                     self.beaconChain.append(b)
-                    #self.log("I have mined beacon block %s number %d at time %d" % (b.hash[-4:], b.number, self.time), 1)
+                    self.log("I have mined beacon block %s number %d at time %d" % (b.hash[-4:], b.number, self.time), 1)
+                    #print(self.currentCommittee)
                     message = {}
                     message["header"] = "New beacon block"
                     message["source"] = self.nodeID
                     message["block"] = b
                     self.broadcast(message)
-
+                else: # Adding beacon block place holder
+                    if len(self.beaconChain) > 0:
+                        b = block(self.beaconChain[-1], -1, -1)
+                    else:
+                        b = block(None, -1, -1)
+                        b.miner = -1
+                    self.beaconChain.append(b)
 
     def tick(self):
         self.listen()
@@ -132,9 +157,17 @@ class node():
         self.time += 1
 
     def cleanOutQueue(self):
-        if len(self.outQueue) > self.config.maxOutQueue:
+        #self.log("Out queue length: "+str(len(self.outQueue)), 5, 34)
+        cnt = self.config.maxOutQueue
+        while (len(self.outQueue) > self.config.maxOutQueue) and (cnt > 0):
             sReq = self.outQueue.pop(0)
-            sReq.wait()
+            if sReq.test()[0] != True:
+                self.lostMsgs.append(sReq)
+                cnt = cnt - 1
+        if (cnt <= 0):
+            self.log("TOO MANY FAILED MESSAGES!!! Out queue length: "+str(len(self.outQueue)), 1)
+            self.log("TOO MANY FAILED MESSAGES!!! Out queue length: "+str(len(self.lostMsgs)), 1)
+        #self.log("Out queue length: "+str(len(self.outQueue)), 5, 34)
 
     def send(self, target, message):
         targetRank = int(target/self.config.maxNodesPerRank)
@@ -185,6 +218,13 @@ class node():
                     self.log("Blockchain reorganized with block %s" % (self.blockChain[last-1].hash[-4:]), 2)
                 else:
                     self.log("WARNING : Blockchain could not be reorganized for block number %d" % self.blockChain[last].number, 1)
+                    # TODO: When this happens the node should ask for the blocks to a peer
+                    message = {}
+                    message["header"] = "Need main block"
+                    message["source"] = self.nodeID
+                    message["number"] = self.blockChain[last].number
+                    self.send(self.peers[random.randint(0,(len(self.peers)-1))], message)
+
             last = last - 1
 
     def classifyMessage(self, message):
@@ -198,6 +238,17 @@ class node():
                 message["source"] = self.nodeID
                 target = source
                 self.send(target, message)
+        if message["header"] == "Need main block":
+            source = message["source"]
+            number = message["number"]
+            self.log("Block %d was requested by peer %d" % (number, source), 1)
+            index = number - self.blockChain[0].number
+            if len(self.blockChain) > index:
+                message = {}
+                message["header"] = "New main block"
+                message["source"] = self.nodeID
+                message["block"] = self.blockChain[index]
+                self.send(source, message)
         elif message["header"] == "New main block":
             source = message["source"]
             newBlock = message["block"]
@@ -207,7 +258,7 @@ class node():
                 if newBlock.number ==  (self.blockChain[-1].number + 1): # If it is the next block
                     newBlock.arrivalTime = self.time
                     self.blockChain.append(newBlock) # Add it to the main chain
-                    self.log("New main block %s number %d received" % (newBlock.hash[-4:], newBlock.number), 3)
+                    self.log("New main block %s number %d received" % (newBlock.hash[-4:], newBlock.number), 2)
                     message["source"] = self.nodeID
                     self.broadcast(message)
                     self.checkChain()
@@ -257,13 +308,16 @@ class node():
                         if newBlock.number <=  (self.beaconChain[-1].number): # If it is a past block
                             newBlock.arrivalTime = self.time
                             index = newBlock.number - self.beaconChain[0].number
-                            self.beaconChain[index] = newBlock
-                            self.log("New beacon block %s number %d received" % (newBlock.hash[-4:], newBlock.number), 3)
-                            message["source"] = self.nodeID
-                            self.broadcast(message)
+                            if newBlock.miner > self.beaconChain[index].miner: #FIXME : Not the right fork choice rule
+                                self.beaconChain[index] = newBlock
+                                self.log("New beacon block %s number %d overwriting past one" % (newBlock.hash[-4:], newBlock.number), 3)
+                                message["source"] = self.nodeID
+                                self.broadcast(message)
+                            else:
+                                self.log("WARNING : Uncle beacon block received", 1)
                         else: # If the block is ahead of the next block
                             nbMissingBlocks = newBlock.number - self.beaconChain[-1].number
-                            self.log("WARNING : Beacon chain seems out of sync", 1)
+                            self.log("WARNING : Beacon chain seems out of sync", 2)
                             for i in range(nbMissingBlocks-1):
                                 b = block(None, 0, 0)
                                 b.arrivalTime = self.time
@@ -272,6 +326,7 @@ class node():
                                 self.beaconChain.append(b)
                             newBlock.arrivalTime = self.time
                             self.beaconChain.append(newBlock) # Add it to the beacon chain
+                            self.beaconPending[str(newBlock.number)] = 0
                             self.log("New beacon block %s number %d received" % (newBlock.hash[-4:], newBlock.number), 3)
                             message["source"] = self.nodeID
                             self.broadcast(message)
@@ -418,9 +473,8 @@ class node():
                 delays.append(0)
         if len(delays) < 1 and len(self.blockChain) > 0:
             self.log("WARNING: Block delays list is empty but not the blockChain", 1)
-            print(len(self.blockChain))
-            print(delays)
-
+            #print(len(self.blockChain))
+            #print(delays)
         dataset = []
         dataset.append(range(len(delays)))
         dataset.append(delays)
@@ -450,7 +504,8 @@ class node():
         uncleRate = [0] * nbBlocks
         for uncle in self.uncles:
             un = uncle.number - self.blockChain[0].number
-            uncleRate[un] = uncleRate[un] + 1
+            if un < len(uncleRate): #FIXME : There seems to be a bug if this test is not performed
+                uncleRate[un] = uncleRate[un] + 1
         ur = []
         sliceStart = 0
         while sliceStart < nbBlocks:

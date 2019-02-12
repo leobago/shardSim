@@ -67,6 +67,10 @@ def mainReport(net, globalPeers):
                         line("h3", "Beacon Block Mined")
                         with tag("a", href="beaconMiners.png"):
                             doc.stag('img', src="beaconMiners.png")
+                        line("h3", "Last Beacon Block")
+                        with tag("a", href="lastBeacon.png"):
+                            doc.stag('img', src="lastBeacon.png")
+
 
                 with tag('tr'):
                     with tag('td', align="center"):
@@ -149,7 +153,7 @@ def nodeReport(node):
                     with tag('td', align="center"):
                         with tag('h2'):
                             text("Beacon Chain")
-                        if node.uncles:
+                        if node.beaconChain:
                             with tag('table', width="900", klass="chain"):
                                 with tag('tr'):
                                     line("td", "Number", klass="header")
