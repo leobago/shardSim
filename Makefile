@@ -1,5 +1,6 @@
 DOC		= doc
 DAT		= data
+SRC		= shardSim
 
 all: 		test
 
@@ -14,7 +15,7 @@ package:
 		tar czvf ../shardSim.tgz ./* --exclude-vcs --exclude='*.pyc'
 
 clean:
-		$(RM) -rf $(DOC)/*/* $(DAT)/*
+		$(RM) -rf $(DOC)/*/* $(DAT)/* $(SRC)/*pyc $(SRC)/__pycache__/*
 
 .PHONY:		test doc clean
 
