@@ -22,7 +22,7 @@ class configuration():
         self.maxNodesPerRank = 10
 
         # Time settings
-        self.simTime = 4000
+        self.simTime = 1000
         self.timeSpeed = 100
         self.syncTime = 5
 

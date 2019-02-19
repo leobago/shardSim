@@ -126,6 +126,11 @@ class node():
                 if self.proposers[-1] == self.nodeID:
                     if len(self.beaconChain) > 0:
                         b = block(self.beaconChain[-1], self.nodeID, self.time)
+                        bp = self.beaconChain[-1]
+                        self.log("Beacon : %d" % bp.number, 2)
+                        self.log("Beacon : %s" % bp.hash, 2)
+                        self.log("Beacon : %s" % bp.parent, 2)
+                        self.log("Beacon : %d" % bp.time, 2)
                     else:
                         b = block(None, 0, 0)
                         b.miner = self.nodeID
@@ -145,7 +150,8 @@ class node():
                     else:
                         b = block(None, -1, -1)
                         b.miner = -1
-                    self.beaconChain.append(b)
+                    #self.beaconChain.append(b)
+                    #self.log("Appending place holder", 2)
 
     def tick(self):
         self.listen()
@@ -309,10 +315,18 @@ class node():
                             newBlock.arrivalTime = self.time
                             index = newBlock.number - self.beaconChain[0].number
                             if newBlock.miner > self.beaconChain[index].miner: #FIXME : Not the right fork choice rule
-                                self.beaconChain[index] = newBlock
-                                self.log("New beacon block %s number %d overwriting past one" % (newBlock.hash[-4:], newBlock.number), 3)
+                                self.beaconChain[index].number = newBlock.number
+                                self.beaconChain[index].miner = newBlock.miner
+                                self.beaconChain[index].hash = newBlock.hash
+                                self.beaconChain[index].time = newBlock.time
+                                self.log("New beacon block %s number %d overwriting past block (or placeholder)" % (newBlock.hash[-4:], newBlock.number), 3)
                                 message["source"] = self.nodeID
                                 self.broadcast(message)
+                                bp = self.beaconChain[-1]
+                                self.log("Beacon : %d" % bp.number, 2)
+                                self.log("Beacon : %s" % bp.hash, 2)
+                                self.log("Beacon : %s" % bp.parent, 2)
+                                self.log("Beacon : %d" % bp.time, 2)
                             else:
                                 self.log("WARNING : Uncle beacon block received", 1)
                         else: # If the block is ahead of the next block

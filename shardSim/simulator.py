@@ -73,6 +73,7 @@ class simulator():
         peerList = []
         lastBlock = []
         lastBeacon = []
+        self.log("Generating reports. This might take a few minutes...", 1)
         for node in self.net.nodes:
             peerList.append([node.nodeID, node.peers])
             lastBlock.append(node.blockChain[-1].number - node.blockChain[0].number)

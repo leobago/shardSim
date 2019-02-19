@@ -19,7 +19,7 @@ def mySimulation():
     sim.bootstrap()
     sim.run()
     report = sim.postProcess()
-    if report:
+    if sim.topo.rank == 0:
         call(["google-chrome", report])
 
 mySimulation()
