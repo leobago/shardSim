@@ -65,11 +65,13 @@ class simulator():
                 pass
                 #self.log("WARNING! Tick time (%f) longer than time resolution (%f)" % (tickTime, self.timeResolution), 1)
 
-        end = time.time()
         self.topo.comm.barrier()
+        end = time.time()
         self.log("Simulation executed in %f seconds" % (end-start), 1)
 
     def postProcess(self):
+        start = time.time()
+        first = True
         peerList = []
         lastBlock = []
         lastBeacon = []
@@ -78,10 +80,17 @@ class simulator():
             peerList.append([node.nodeID, node.peers])
             lastBlock.append(node.blockChain[-1].number - node.blockChain[0].number)
             lastBeacon.append(node.beaconChain[-1].number - node.beaconChain[0].number)
-            if len(node.blockChain) > 1:
-                node.plotBlockDelays()
-            node.plotMsgs()
-            node.report()
+            if first:
+                if len(node.blockChain) > 1:
+                    node.plotBlockDelays()
+                node.plotMsgs()
+                node.report()
+                if self.config.shortReport:
+                    first = False
+            else:
+                node.report(short=1)
+
+        fileName = ""
         globalPeers = self.topo.comm.gather(peerList, root=0)
         lb = self.topo.comm.gather(lastBlock, root=0)
         le = self.topo.comm.gather(lastBeacon, root=0)
@@ -103,8 +112,10 @@ class simulator():
             f.write(htmlContent)
             f.close()
             self.log("Complete report generated in "+fileName, 1)
-            return fileName
-        return None
+        self.topo.comm.barrier()
+        end = time.time()
+        self.log("Simulation post-processed in %f seconds" % (end-start), 1)
+        return fileName
 
     def plotLastBlock(self, lastBlock):
         dataset = []

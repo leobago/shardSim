@@ -91,6 +91,51 @@ def mainReport(net, globalPeers):
 
     return indent(doc.getvalue())
 
+def nullReport(node):
+    doc, tag, text, line = Doc().ttl()
+    with tag('html'):
+        with tag('head'):
+            doc.stag("link", rel="stylesheet", href="styles.css")
+        with tag('body'):
+            with tag('table', width="1000"):
+                with tag('tr'):
+                    with tag('td', align="center"):
+                        with tag('h1'):
+                            with tag('a', href="index.html"):
+                                text("Sharding Simulation "+node.config.simID+" - Node "+str(node.nodeID))
+                with tag('tr'):
+                    with tag('td', align="center"):
+                        with tag('h2'):
+                            text("This report has been cut for efficiency.")
+                        doc.stag('br')
+
+                with tag('tr'):
+                    with tag('td', align="center"):
+                        with tag('h2'):
+                            text("Peers")
+                        for peer in node.peers:
+                            with tag("a", href=str(peer)+".html"):
+                                    text(str(peer))
+                        doc.stag('br')
+
+                with tag('tr'):
+                    with tag('td', align="center"):
+                        with tag('h2'):
+                            text("Detailed log")
+                        with tag("a", href=str(node.nodeID)+"-log.html"):
+                                    text("Log")
+                        doc.stag('br')
+
+                with tag('tr'):
+                    with tag('td', align="center"):
+                        with tag('h6'):
+                            text("Trace generated with Sharding Simulator ")
+                            with tag("a", href="https://github.com/leobago/shardSim"):
+                                text("shardSim")
+
+    return indent(doc.getvalue())
+
+
 def nodeReport(node):
     doc, tag, text, line = Doc().ttl()
     with tag('html'):

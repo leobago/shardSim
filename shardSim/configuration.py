@@ -47,6 +47,7 @@ class configuration():
 
         # Post-processing setting
         self.verbosity = 1
+        self.shortReport = True
         self.resultsDir = "data"
         now = datetime.datetime.now()
         simID = now.strftime("%Y-%m-%d_%H-%M-%S")

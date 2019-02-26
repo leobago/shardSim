@@ -14,7 +14,7 @@ import random, sys
 from mpi4py import MPI
 
 
-from .report import nodeReport, nodeLogReport
+from .report import nodeReport, nodeLogReport, nullReport
 from .plot import getFig, plotData
 from .block import block
 from .tools import getShuffle, splitCommittees
@@ -370,13 +370,17 @@ class node():
         else:
             self.log("Random number was %d" % r, 4)
 
-    def report(self):
-        htmlContent = nodeReport(self)
+    def report(self, short=False):
+        if (short):
+            htmlContent = nullReport(self)
+            htmlLogContent = nullReport(self)
+        else:
+            htmlContent = nodeReport(self)
+            htmlLogContent = nodeLogReport(self)
         fileName = self.config.simDir+"/"+str(self.nodeID)+".html"
         f =  open(fileName, "w")
         f.write(htmlContent)
         f.close()
-        htmlLogContent = nodeLogReport(self)
         fileName = self.config.simDir+"/"+str(self.nodeID)+"-log.html"
         f =  open(fileName, "w")
         f.write(htmlLogContent)
